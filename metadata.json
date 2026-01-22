@@ -1,0 +1,7 @@
+{
+  "name": "Copy Herbarium AI",
+  "description": "Um aplicativo avançado para identificar plantas",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}
