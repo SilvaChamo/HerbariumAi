@@ -20,7 +20,7 @@ const AccountDashboard: React.FC<AccountDashboardProps> = ({
     const [showReceipt, setShowReceipt] = useState(false);
 
     return (
-        <div className="flex-1 overflow-y-auto bg-[#f8fafc] animate-in fade-in slide-in-from-bottom flex flex-col">
+        <div className="flex-1 overflow-y-auto animate-in fade-in slide-in-from-bottom flex flex-col">
             {/* Profile Header */}
             <div className="bg-white p-8 border-b border-slate-100 flex flex-col items-center text-center space-y-4">
                 <div className="w-24 h-24 bg-gradient-to-br from-emerald-400 to-[#10b981] rounded-[2.5rem] flex items-center justify-center text-white text-3xl font-black shadow-xl shadow-emerald-100 border-4 border-white">

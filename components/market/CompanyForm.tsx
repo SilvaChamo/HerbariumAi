@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { CompanyDetail, PlanType, BillingPeriod } from '../../types';
 import { formatCurrency } from '../../utils';
+import InvoiceReceipt from './InvoiceReceipt';
 
 interface CompanyFormProps {
     initialData?: CompanyDetail;
@@ -60,6 +61,7 @@ const CompanyForm: React.FC<CompanyFormProps> = ({ initialData, onSubmit, onClos
     const [paymentType, setPaymentType] = useState<'plan' | 'featured' | null>(null);
     const [paymentPhone, setPaymentPhone] = useState('');
     const [bankDetails, setBankDetails] = useState({ holder: '', bankName: '', nib: '', iban: '', agency: '' });
+    const [showReceipt, setShowReceipt] = useState(false);
     const [isPaymentProcessing, setIsPaymentProcessing] = useState(false);
 
     const handleAddProductField = () => {
@@ -79,6 +81,10 @@ const CompanyForm: React.FC<CompanyFormProps> = ({ initialData, onSubmit, onClos
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
+        if (!formData.fullDescription?.trim()) {
+            alert("Por favor, preencha a descrição completa da empresa.");
+            return;
+        }
         if (formData.plan !== 'Free' && !hasPaidPlan) {
             alert("Por favor, efectue o pagamento do plano.");
             return;
@@ -455,7 +461,14 @@ const CompanyForm: React.FC<CompanyFormProps> = ({ initialData, onSubmit, onClos
                                                 setIsPaymentProcessing(false);
                                                 setHasPaidPlan(true);
                                                 setHasPaidFeatured(true);
-                                                alert("Pagamento efectuado com sucesso!");
+                                                const finalData = {
+                                                    ...formData,
+                                                    paymentMethod,
+                                                    paymentPhone,
+                                                    plan: formData.plan,
+                                                    isFeatured: formData.isFeatured
+                                                } as CompanyDetail;
+                                                onSubmit(finalData);
                                             }, 1500);
                                         }}
                                         disabled={isPaymentProcessing}
@@ -533,7 +546,14 @@ const CompanyForm: React.FC<CompanyFormProps> = ({ initialData, onSubmit, onClos
                                                 setIsPaymentProcessing(false);
                                                 setHasPaidPlan(true);
                                                 setHasPaidFeatured(true);
-                                                alert("Pagamento bancário registado com sucesso!");
+                                                const finalData = {
+                                                    ...formData,
+                                                    paymentMethod: 'banco' as const,
+                                                    plan: formData.plan,
+                                                    isFeatured: formData.isFeatured,
+                                                    bankDetails
+                                                } as any;
+                                                onSubmit(finalData);
                                             }, 1500);
                                         }}
                                         disabled={isPaymentProcessing}
@@ -560,6 +580,17 @@ const CompanyForm: React.FC<CompanyFormProps> = ({ initialData, onSubmit, onClos
                     </button>
                 </div>
             </form>
+
+            {showReceipt && (
+                <InvoiceReceipt
+                    company={{
+                        ...formData,
+                        paymentMethod,
+                        paymentPhone
+                    } as CompanyDetail}
+                    onClose={() => setShowReceipt(false)}
+                />
+            )}
         </div>
     );
 };

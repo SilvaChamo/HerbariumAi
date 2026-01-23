@@ -10,6 +10,7 @@ import LoadingOverlay from './components/layout/LoadingOverlay';
 import PlantDetail from './components/PlantDetail';
 import Scanner from './components/scanner/Scanner';
 import AuthForm from './components/auth/AuthForm';
+import Dialog from './components/ui/Dialog';
 import CompanyForm from './components/market/CompanyForm';
 import CompanyDetailView from './components/market/CompanyDetailView';
 import MarketDashboard from './components/market/MarketDashboard';
@@ -32,9 +33,16 @@ const App: React.FC = () => {
   // Controle de Dashboard
   const [showDashboard, setShowDashboard] = useState(false);
   const [myCompany, setMyCompany] = useState<CompanyDetail | null>(null);
-
   const [featuredCompanies, setFeaturedCompanies] = useState<CompanyDetail[]>([]);
+
   const [currentSlide, setCurrentSlide] = useState(0);
+  const [pendingRegister, setPendingRegister] = useState(false);
+  const [dialog, setDialog] = useState<{ isOpen: boolean, title: string, message: string, type: 'success' | 'error' | 'info' }>({
+    isOpen: false,
+    title: '',
+    message: '',
+    type: 'info'
+  });
 
   // Carregar dados iniciais e monitorar autenticação
   useEffect(() => {
@@ -116,7 +124,13 @@ const App: React.FC = () => {
 
   const handleAuth = (newUser: User) => {
     setUser(newUser);
-    setActiveTab(AppTab.SCAN);
+    if (pendingRegister) {
+      setActiveTab(AppTab.DISCOVER);
+      setShowCompanyForm(true);
+      setPendingRegister(false);
+    } else {
+      setActiveTab(AppTab.ACCOUNT);
+    }
   };
 
   const handleLogout = async () => {
@@ -142,9 +156,16 @@ const App: React.FC = () => {
       setFeaturedCompanies(updatedFeatured);
 
       setShowCompanyForm(false);
-      alert("Empresa cadastrada com sucesso!");
+      setActiveTab(AppTab.ACCOUNT);
+      setActiveTab(AppTab.ACCOUNT);
+      // alert("Empresa cadastrada com sucesso!");
     } catch (err: any) {
-      alert("Erro ao cadastrar empresa: " + err.message);
+      setDialog({
+        isOpen: true,
+        title: 'Erro de Cadastro',
+        message: err.message,
+        type: 'error'
+      });
     } finally {
       setLoading(false);
     }
@@ -164,7 +185,7 @@ const App: React.FC = () => {
   };
 
   return (
-    <div className="w-full sm:w-[clamp(360px,95vw,380px)] h-screen sm:h-[min(844px,calc(100vh-40px))] sm:my-4 bg-[#f1f5f9] flex flex-col relative overflow-hidden sm:rounded-[2.5rem] sm:border-[8px] sm:border-slate-800 shadow-2xl text-slate-800 transition-all duration-500">
+    <div className="w-full sm:w-[clamp(360px,95vw,380px)] h-screen sm:h-[min(844px,calc(100vh-40px))] sm:my-4 flex flex-col relative overflow-hidden sm:rounded-[2.5rem] sm:border-[8px] sm:border-slate-800 shadow-2xl text-slate-800 transition-all duration-500 bg-[#f1f5f9]">
       <Header
         user={user}
         myCompany={myCompany}
@@ -199,7 +220,19 @@ const App: React.FC = () => {
                 <div className="px-6 mt-6">
                   <div className="flex justify-between items-center mb-3">
                     <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Destaques e Anúncios</p>
-                    <button onClick={() => setShowCompanyForm(true)} className="text-[9px] font-black text-white bg-orange-500 px-4 py-2 rounded-lg hover:bg-orange-600 transition-all uppercase shadow-lg shadow-orange-100">CADASTRO</button>
+                    <button
+                      onClick={() => {
+                        if (!user) {
+                          setPendingRegister(true);
+                          setActiveTab(AppTab.AUTH);
+                        } else {
+                          setShowCompanyForm(true);
+                        }
+                      }}
+                      className="text-[9px] font-black text-white bg-orange-500 px-4 py-2 rounded-lg hover:bg-orange-600 transition-all uppercase shadow-lg shadow-orange-100"
+                    >
+                      CADASTRO
+                    </button>
                   </div>
                   <div className="relative overflow-hidden h-44 bg-white border border-slate-200 rounded-xl shadow-sm">
                     {featuredCompanies.map((emp, idx) => (
@@ -243,7 +276,7 @@ const App: React.FC = () => {
             onLoadingChange={setLoading}
           />
         ) : activeTab === AppTab.COLLECTION ? (
-          <div className="h-full flex flex-col p-6 space-y-8 bg-[#f8fafc] animate-in fade-in">
+          <div className="h-full flex flex-col p-6 space-y-8 animate-in fade-in">
             <div className="space-y-1">
               <h2 className="text-2xl font-bold text-[#1e293b]">Mercado Agrário</h2>
               <p className="text-[10px] font-black text-emerald-600 uppercase tracking-widest">Informações Essenciais Nacionais</p>
@@ -326,7 +359,7 @@ const App: React.FC = () => {
               }}
             />
           ) : (
-            <div className="flex-1 flex flex-col items-center justify-center text-center p-8 space-y-6 bg-white h-full">
+            <div className="flex-1 flex flex-col items-center justify-center text-center p-8 space-y-6 h-full">
               <div className="w-24 h-24 bg-slate-50 rounded-[2.5rem] flex items-center justify-center shadow-sm">
                 <i className="fa-solid fa-lock text-4xl text-slate-200"></i>
               </div>
@@ -336,9 +369,9 @@ const App: React.FC = () => {
               </div>
               <button
                 onClick={() => setActiveTab(AppTab.AUTH)}
-                className="w-full max-w-xs bg-[#10b981] text-white py-4 rounded-2xl font-bold font-montserrat shadow-lg shadow-emerald-100"
+                className="w-full max-w-[200px] bg-[#10b981] text-white py-3 rounded-lg font-black text-[11px] uppercase tracking-widest shadow-lg shadow-emerald-100 active:scale-95 transition-all"
               >
-                Entrar / Registar
+                Entrar | Registar
               </button>
             </div>
           )
@@ -365,6 +398,14 @@ const App: React.FC = () => {
       )}
 
       <LoadingOverlay isLoading={loading} />
+
+      <Dialog
+        isOpen={dialog.isOpen}
+        title={dialog.title}
+        message={dialog.message}
+        type={dialog.type}
+        onClose={() => setDialog({ ...dialog, isOpen: false })}
+      />
     </div>
   );
 };

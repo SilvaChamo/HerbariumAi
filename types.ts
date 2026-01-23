@@ -83,4 +83,6 @@ export interface CompanyDetail {
   plan?: PlanType;
   billingPeriod?: BillingPeriod;
   isFeatured?: boolean;
+  paymentMethod?: 'mpesa' | 'emola' | 'banco' | null;
+  paymentPhone?: string;
 }

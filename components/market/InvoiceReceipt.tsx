@@ -12,10 +12,14 @@ const InvoiceReceipt: React.FC<InvoiceReceiptProps> = ({ company, onClose }) => 
     const invoiceNumber = `INV-${Math.floor(100000 + Math.random() * 900000)}`;
 
     const getPlanPrice = () => {
-        if (company.plan === 'Básico') return 500;
-        if (company.plan === 'Premium') return 1500;
-        if (company.plan === 'Parceiro') return 5000;
-        return 0;
+        if (!company.plan || company.plan === 'Free') return 0;
+        const prices: Record<string, number> = {
+            'Básico': 500,
+            'Premium': 1500,
+            'Parceiro': 5000
+        };
+        const base = prices[company.plan] || 0;
+        return company.billingPeriod === 'annual' ? base * 12 * 0.83 : base;
     };
 
     const planPrice = getPlanPrice();
@@ -64,13 +68,31 @@ const InvoiceReceipt: React.FC<InvoiceReceiptProps> = ({ company, onClose }) => 
 
                         <div className="pt-4 border-t border-dashed border-slate-100 space-y-3">
                             <div className="flex justify-between text-xs">
-                                <span className="text-slate-500 font-medium">Plano {company.plan}</span>
+                                <span className="text-slate-500 font-medium">
+                                    Plano {company.plan} ({company.billingPeriod === 'monthly' ? 'Mensal' : 'Anual'})
+                                </span>
                                 <span className="font-bold text-slate-700">{formatCurrency(planPrice)} MT</span>
                             </div>
                             {company.isFeatured && (
                                 <div className="flex justify-between text-xs">
                                     <span className="text-slate-500 font-medium">Destaque de Mercado</span>
                                     <span className="font-bold text-slate-700">{formatCurrency(1000)} MT</span>
+                                </div>
+                            )}
+                        </div>
+
+                        <div className="pt-4 border-t border-dashed border-slate-100 space-y-2">
+                            <div className="flex justify-between text-[10px] uppercase font-black text-slate-400">
+                                <span>Método de Pagamento</span>
+                                <span className="text-slate-600">{company.paymentMethod?.toUpperCase() || 'N/A'}</span>
+                            </div>
+                            {company.paymentPhone && (
+                                <div className="flex justify-between text-[10px] items-center">
+                                    <span className="text-slate-400 font-bold uppercase">Contacto Utilizado</span>
+                                    <span className="text-slate-600 font-bold px-2 py-0.5 bg-slate-50 rounded border border-slate-100">
+                                        <i className="fa-solid fa-mobile-screen mr-1 text-[8px]"></i>
+                                        {company.paymentPhone}
+                                    </span>
                                 </div>
                             )}
                         </div>
