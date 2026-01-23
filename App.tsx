@@ -15,6 +15,7 @@ import CompanyForm from './components/market/CompanyForm';
 import CompanyDetailView from './components/market/CompanyDetailView';
 import MarketDashboard from './components/market/MarketDashboard';
 import AccountDashboard from './components/market/AccountDashboard';
+import VideoAdForm from './components/market/VideoAdForm';
 
 import { supabase } from './supabaseClient';
 import { databaseService } from './services/databaseService';
@@ -27,7 +28,16 @@ const App: React.FC = () => {
   const [selectedPlant, setSelectedPlant] = useState<PlantInfo | null>(null);
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
 
+  // Playlist de Vídeos Publicitários (30 Segundos em Loop)
+  const [adVideos, setAdVideos] = useState<string[]>([
+    'https://www.youtube.com/embed/dFkpQz2Zw0c',
+    'https://www.youtube.com/embed/Y4goaZhNt4k',
+    'https://www.youtube.com/embed/df1RYxkASyw'
+  ]);
+  const [currentVideoIndex, setCurrentVideoIndex] = useState(0);
+
   const [showCompanyForm, setShowCompanyForm] = useState(false);
+  const [showVideoAdForm, setShowVideoAdForm] = useState(false);
   const [viewingCompany, setViewingCompany] = useState<CompanyDetail | null>(null);
 
   // Controle de Dashboard
@@ -49,7 +59,18 @@ const App: React.FC = () => {
     // 1. Carregar Empresas em Destaque (Público)
     databaseService.getCompanies().then(setFeaturedCompanies).catch(console.error);
 
-    // 2. Sincronizar Sessão
+    // 2. Carregar Spots de Vídeo
+    databaseService.getVideoAds()
+      .then(ads => {
+        if (ads.length > 0) {
+          const dbEmbeds = ads.map(ad => ad.embedUrl);
+          // Manter os exemplos e adicionar os do banco no início ou fim
+          setAdVideos(prev => [...prev, ...dbEmbeds]);
+        }
+      })
+      .catch(console.error);
+
+    // 3. Sincronizar Sessão
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session?.user) {
         const userData = {
@@ -80,6 +101,17 @@ const App: React.FC = () => {
 
     return () => subscription.unsubscribe();
   }, []);
+
+  // Efeito para trocar vídeos da playlist automaticamente
+  useEffect(() => {
+    if (adVideos.length <= 1) return;
+
+    const interval = setInterval(() => {
+      setCurrentVideoIndex(prev => (prev + 1) % adVideos.length);
+    }, 30000); // Troca a cada 30 segundos
+
+    return () => clearInterval(interval);
+  }, [adVideos]);
 
   const loadUserData = async (userId: string) => {
     try {
@@ -143,7 +175,12 @@ const App: React.FC = () => {
 
   const handleRegisterCompany = async (company: CompanyDetail) => {
     if (!user) {
-      alert("Você precisa estar logado para registrar uma empresa.");
+      setDialog({
+        isOpen: true,
+        title: 'Acesso Negado',
+        message: 'Você precisa estar logado para registrar uma empresa.',
+        type: 'error'
+      });
       return;
     }
     setLoading(true);
@@ -152,13 +189,19 @@ const App: React.FC = () => {
       setMyCompany(savedCompany);
 
       // Atualizar lista de destaques se necessário
-      const updatedFeatured = await databaseService.getCompanies();
-      setFeaturedCompanies(updatedFeatured);
+      const allCompanies = await databaseService.getCompanies();
+      const featuredOnly = allCompanies.filter(c => c.isFeatured);
+      setFeaturedCompanies(featuredOnly);
 
       setShowCompanyForm(false);
       setActiveTab(AppTab.ACCOUNT);
-      setActiveTab(AppTab.ACCOUNT);
-      // alert("Empresa cadastrada com sucesso!");
+
+      setDialog({
+        isOpen: true,
+        title: 'Sucesso',
+        message: 'Empresa cadastrada com sucesso!',
+        type: 'success'
+      });
     } catch (err: any) {
       setDialog({
         isOpen: true,
@@ -209,6 +252,7 @@ const App: React.FC = () => {
                 initialData={myCompany || undefined}
                 onSubmit={handleRegisterCompany}
                 onClose={() => setShowCompanyForm(false)}
+                onAlert={(title, message, type) => setDialog({ isOpen: true, title, message, type })}
               />
             ) : viewingCompany ? (
               <CompanyDetailView
@@ -216,53 +260,91 @@ const App: React.FC = () => {
                 onBack={() => setViewingCompany(null)}
               />
             ) : (
-              <div className="space-y-8 pb-10">
-                <div className="px-6 mt-6">
-                  <div className="flex justify-between items-center mb-3">
-                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Destaques e Anúncios</p>
-                    <button
-                      onClick={() => {
-                        if (!user) {
-                          setPendingRegister(true);
-                          setActiveTab(AppTab.AUTH);
-                        } else {
-                          setShowCompanyForm(true);
-                        }
-                      }}
-                      className="text-[9px] font-black text-white bg-orange-500 px-4 py-2 rounded-lg hover:bg-orange-600 transition-all uppercase shadow-lg shadow-orange-100"
-                    >
-                      CADASTRO
-                    </button>
-                  </div>
-                  <div className="relative overflow-hidden h-44 bg-white border border-slate-200 rounded-xl shadow-sm">
-                    {featuredCompanies.map((emp, idx) => (
-                      <div key={idx} className={`absolute inset-0 p-5 flex flex-col justify-between transition-all duration-700 ${idx === currentSlide ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-10 pointer-events-none'}`}>
-                        <div className="flex gap-4">
-                          <div className="w-16 h-16 rounded-lg overflow-hidden bg-slate-50"><img src={emp.logo} className="w-full h-full object-cover" /></div>
+              <div className="flex flex-col animate-in fade-in pb-10">
+                {/* Hero Slider (Architecture Mirror of Market) */}
+                <div className="aspect-video bg-white border-b border-slate-200 shadow-sm overflow-hidden relative group">
+                  {featuredCompanies.length > 0 ? (
+                    featuredCompanies.map((emp, idx) => (
+                      <div key={idx} className={`absolute inset-0 p-6 flex flex-col justify-between transition-all duration-700 ${idx === currentSlide ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-10 pointer-events-none'}`}>
+                        {/* Premium Badge top-right */}
+                        <div className="absolute top-6 right-6">
+                          <span className="px-2 py-1 bg-emerald-500 text-[9px] font-black text-white rounded uppercase tracking-widest shadow-sm">Premium</span>
+                        </div>
+
+                        <div className="flex flex-col gap-3">
+                          <div className="h-12 w-full flex items-center justify-start">
+                            <img src={emp.logo} className="h-full max-w-[150px] object-contain" />
+                          </div>
                           <div>
-                            <h4 className="font-bold text-[#1e293b] text-base">{emp.name}</h4>
-                            <p className="text-[10px] text-slate-500">{emp.activity}</p>
-                            <p className="text-[9px] text-slate-400 mt-1"><i className="fa-solid fa-location-dot mr-1 text-orange-500"></i> {emp.location}</p>
+                            <div className="mb-1">
+                              <h4 className="font-black text-slate-700 text-lg leading-none">{emp.name}</h4>
+                            </div>
+                            <p className="text-[11px] text-slate-500 font-bold tracking-tight">{emp.activity}</p>
+                            <p className="text-[10px] text-slate-400 mt-2 font-medium flex items-center">
+                              <i className="fa-solid fa-location-dot mr-2 text-orange-500"></i> {emp.location}
+                            </p>
+
+                            {/* Ver Perfil Text Link */}
+                            <div
+                              onClick={(e) => { e.stopPropagation(); setViewingCompany(emp); }}
+                              className="inline-flex items-center gap-2 mt-4 cursor-pointer group/link hover:opacity-80 transition-all"
+                            >
+                              <span className="text-[10px] font-black text-emerald-600 uppercase tracking-tighter border-b border-emerald-600/30 group-hover/link:border-emerald-600 transition-all">Ver Perfil da Empresa</span>
+                              <i className="fa-solid fa-arrow-right text-[9px] text-emerald-600 transition-transform group-hover/link:translate-x-1"></i>
+                            </div>
                           </div>
                         </div>
-                        <div onClick={() => setViewingCompany(emp)} className="flex justify-between items-center cursor-pointer group">
-                          <span className="text-[10px] font-black text-[#10b981] group-hover:text-orange-600 uppercase tracking-tighter">Ver Perfil Completo</span>
-                          <div className="w-8 h-8 rounded-full bg-slate-50 flex items-center justify-center group-hover:bg-orange-500 group-hover:text-white transition-all"><i className="fa-solid fa-arrow-right text-[10px]"></i></div>
-                        </div>
                       </div>
-                    ))}
+                    ))
+                  ) : (
+                    <div className="absolute inset-0 flex flex-col items-center justify-center text-center p-6 space-y-3">
+                      <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center shadow-inner">
+                        <i className="fa-solid fa-store text-slate-200 text-3xl"></i>
+                      </div>
+                      <div>
+                        <p className="text-[11px] font-black text-slate-400 uppercase tracking-widest">Nenhuma empresa em destaque</p>
+                        <p className="text-[9px] text-slate-300 font-bold uppercase mt-1">Seja o primeiro a aparecer aqui</p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Company Registration Banner (Architectural Mirror) */}
+                <div
+                  onClick={() => {
+                    if (!user) {
+                      setPendingRegister(true);
+                      setActiveTab(AppTab.AUTH);
+                    } else {
+                      setShowCompanyForm(true);
+                    }
+                  }}
+                  className="bg-[#10b981] px-6 py-[10px] flex items-center justify-between cursor-pointer border-y border-emerald-500 hover:bg-[#f97316] transition-all group shadow-lg shadow-emerald-50"
+                >
+                  <div className="flex items-start gap-3">
+                    <div className="w-7 h-7 bg-white/20 backdrop-blur-md border border-white/30 rounded flex items-center justify-center shrink-0 shadow-sm mt-0.5">
+                      <i className="fa-solid fa-building text-white text-sm"></i>
+                    </div>
+                    <div className="leading-none pt-1">
+                      <h4 className="text-[11px] font-black text-white uppercase tracking-tight leading-none">Cadastre sua Empresa</h4>
+                      <p className="text-[10px] text-emerald-50 group-hover:text-orange-50 font-medium mt-1">Aumente sua visibilidade no mercado agrário.</p>
+                    </div>
                   </div>
                 </div>
 
-                {/* Market info removed from here */}
-
-                <div className="px-6 space-y-3">
-                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Categorias</p>
+                {/* Discover Categories (Mirror Spacing) */}
+                <div className="px-6 space-y-3 mt-3 pb-3">
                   <div className="grid grid-cols-2 gap-3">
                     {['Empresas', 'Produtos', 'Profissionais', 'Agro-negócio'].map(cat => (
-                      <button key={cat} onClick={() => setActiveCategory(cat)} className="bg-white border border-slate-200 p-4 rounded-xl flex flex-col items-center gap-3 hover:border-orange-400 transition-all group active:scale-95">
-                        <div className="w-10 h-10 bg-emerald-50 text-[#10b981] group-hover:bg-orange-500 group-hover:text-white rounded-lg flex items-center justify-center text-lg transition-all"><i className={`fa-solid ${cat === 'Empresas' ? 'fa-building' : cat === 'Produtos' ? 'fa-box' : cat === 'Profissionais' ? 'fa-user' : 'fa-hands-holding-circle'}`}></i></div>
-                        <span className="font-bold text-slate-800 text-[11px] uppercase">{cat}</span>
+                      <button
+                        key={cat}
+                        onClick={() => setActiveCategory(cat)}
+                        className="bg-white border border-slate-200 p-4 rounded-xl flex flex-col items-center gap-3 hover:border-orange-400 transition-all hover:shadow-lg hover:shadow-slate-100 group active:scale-95"
+                      >
+                        <div className="w-10 h-10 bg-emerald-50 text-[#10b981] group-hover:bg-orange-500 group-hover:text-white rounded-lg flex items-center justify-center text-lg transition-all shadow-sm">
+                          <i className={`fa-solid ${cat === 'Empresas' ? 'fa-building' : cat === 'Produtos' ? 'fa-box' : cat === 'Profissionais' ? 'fa-user' : 'fa-hands-holding-circle'}`}></i>
+                        </div>
+                        <span className="font-bold text-slate-700 text-[11px] uppercase tracking-tight">{cat}</span>
                       </button>
                     ))}
                   </div>
@@ -276,72 +358,64 @@ const App: React.FC = () => {
             onLoadingChange={setLoading}
           />
         ) : activeTab === AppTab.COLLECTION ? (
-          <div className="h-full flex flex-col p-6 space-y-8 animate-in fade-in">
-            <div className="space-y-1">
-              <h2 className="text-2xl font-bold text-[#1e293b]">Mercado Agrário</h2>
-              <p className="text-[10px] font-black text-emerald-600 uppercase tracking-widest">Informações Essenciais Nacionais</p>
-            </div>
-
-            {/* Weather & Prices - Now here */}
-            <div className="grid grid-cols-2 gap-4">
-              <div className="bg-white p-5 rounded-3xl border border-slate-100 shadow-sm relative overflow-hidden group">
-                <i className="fa-solid fa-cloud-sun absolute -right-2 -top-2 text-orange-50 text-5xl"></i>
-                <p className="text-[10px] font-black text-slate-400 uppercase mb-2">Tempo Maputo</p>
-                <div className="flex items-end gap-2">
-                  <span className="text-3xl font-black text-[#1e293b]">29°C</span>
-                  <span className="text-[10px] text-slate-400 font-bold mb-1">Céu Limpo</span>
-                </div>
+          <div className="h-full flex flex-col animate-in fade-in">
+            {/* Market Video Section (Ad Spot) */}
+            <div className="">
+              <div className="aspect-video bg-white border-b border-slate-200 shadow-sm overflow-hidden flex flex-col relative group">
+                <iframe
+                  className="w-full h-full"
+                  src={`${adVideos[currentVideoIndex]}?autoplay=1&mute=0&controls=0&modestbranding=1&loop=1&playlist=${adVideos[currentVideoIndex].split('/').pop()}&start=0&end=30`}
+                  title="Publicidade em Vídeo"
+                  frameBorder="0"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allowFullScreen
+                ></iframe>
+                <div className="absolute inset-0 bg-slate-900/10 pointer-events-none group-hover:bg-transparent transition-all"></div>
               </div>
-              <div className="bg-white p-5 rounded-3xl border border-slate-100 shadow-sm flex flex-col justify-between">
-                <p className="text-[10px] font-black text-slate-400 uppercase mb-2">Cotação do Dia</p>
-                <div className="space-y-1">
-                  <div className="text-[11px] font-black text-emerald-600 flex justify-between">
-                    <span>Milho</span>
-                    <span>42 MT</span>
+              <div
+                onClick={() => setShowVideoAdForm(true)}
+                className="bg-[#10b981] px-6 py-[10px] flex items-center justify-between cursor-pointer border-y border-emerald-500 hover:bg-[#f97316] transition-all group shadow-lg shadow-emerald-50"
+              >
+                <div className="flex items-start gap-3">
+                  <div className="w-7 h-7 bg-white/20 backdrop-blur-md border border-white/30 rounded flex items-center justify-center shrink-0 shadow-sm mt-0.5">
+                    <i className="fa-brands fa-youtube text-white text-base"></i>
                   </div>
-                  <div className="text-[11px] font-black text-slate-700 flex justify-between">
-                    <span>Feijão</span>
-                    <span>65 MT</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Market News / Alerts */}
-            <div className="space-y-4">
-              <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Alertas e Notícias</h3>
-              <div className="space-y-3">
-                <div className="bg-white p-4 rounded-3xl border border-slate-100 shadow-sm flex gap-4">
-                  <div className="w-12 h-12 bg-orange-50 text-orange-500 rounded-2xl flex items-center justify-center shrink-0">
-                    <i className="fa-solid fa-triangle-exclamation"></i>
-                  </div>
-                  <div>
-                    <h4 className="text-[11px] font-black text-slate-700 uppercase">Época de Sementeira</h4>
-                    <p className="text-[10px] text-slate-500 mt-1">Início da campanha agrária 2026 em Gaza e Inhambane.</p>
-                  </div>
-                </div>
-                <div className="bg-white p-4 rounded-3xl border border-slate-100 shadow-sm flex gap-4">
-                  <div className="w-12 h-12 bg-emerald-50 text-emerald-500 rounded-2xl flex items-center justify-center shrink-0">
-                    <i className="fa-solid fa-wheat-awn"></i>
-                  </div>
-                  <div>
-                    <h4 className="text-[11px] font-black text-slate-700 uppercase">Escoamento de Produção</h4>
-                    <p className="text-[10px] text-slate-500 mt-1">Novas rotas de transporte facilitadas na Zambézia.</p>
+                  <div className="leading-none pt-1">
+                    <h4 className="text-[11px] font-black text-white uppercase tracking-tight leading-none">Publicidade em Vídeo</h4>
+                    <p className="text-[10px] text-emerald-50 group-hover:text-orange-50 font-medium mt-1">Anuncie seu agro-negócio aqui.</p>
                   </div>
                 </div>
               </div>
             </div>
 
-            {/* Bottom Info Card */}
-            <div className="mt-auto bg-slate-900 p-6 rounded-[2.5rem] text-white relative overflow-hidden">
-              <i className="fa-solid fa-leaf absolute -right-4 -bottom-4 text-white/5 text-7xl rotate-12"></i>
-              <h4 className="text-sm font-black uppercase tracking-wider mb-2">Portal do Agricultor</h4>
-              <p className="text-[10px] text-slate-400 leading-relaxed font-medium">Acompanhe as tendências do mercado nacional em tempo real para tomar as melhores decisões no seu negócio.</p>
+            {/* Market Categories (New) */}
+            <div className="px-6 mt-3 pb-3">
+              <div className="grid grid-cols-2 gap-3">
+                {[
+                  { label: 'Fornecedores', icon: 'fa-handshake' },
+                  { label: 'Produtores', icon: 'fa-seedling' },
+                  { label: 'Consumidores', icon: 'fa-user-tag' },
+                  { label: 'Profissionais', icon: 'fa-user-tie' },
+                  { label: 'Lojas de Insumos', icon: 'fa-shop' },
+                  { label: 'Maquinaria', icon: 'fa-tractor' }
+                ].map(cat => (
+                  <button key={cat.label} onClick={() => setActiveCategory(cat.label)} className="bg-white border border-slate-200 p-4 rounded-xl flex flex-col items-center gap-3 hover:border-orange-400 transition-all group active:scale-95 shadow-sm">
+                    <div className="w-10 h-10 bg-emerald-50 text-[#10b981] group-hover:bg-orange-500 group-hover:text-white rounded-lg flex items-center justify-center text-lg transition-all">
+                      <i className={`fa-solid ${cat.icon}`}></i>
+                    </div>
+                    <span className="font-bold text-slate-800 text-[10px] uppercase">{cat.label}</span>
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
         ) : activeTab === AppTab.AUTH ? (
           <div className="h-full overflow-y-auto">
-            <AuthForm onAuth={handleAuth} onNavigate={setActiveTab} />
+            <AuthForm
+              onAuth={handleAuth}
+              onNavigate={setActiveTab}
+              onAlert={(title, message, type) => setDialog({ isOpen: true, title, message, type })}
+            />
           </div>
         ) : activeTab === AppTab.ACCOUNT ? (
           user ? (
@@ -406,6 +480,52 @@ const App: React.FC = () => {
         type={dialog.type}
         onClose={() => setDialog({ ...dialog, isOpen: false })}
       />
+
+      {showVideoAdForm && (
+        <VideoAdForm
+          onClose={() => setShowVideoAdForm(false)}
+          onSubmit={(data) => {
+            // Extrair ID do vídeo do link do YouTube
+            const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+            const match = data.videoLink.match(regExp);
+            const videoId = (match && match[2].length === 11) ? match[2] : data.videoLink;
+
+            const embedUrl = videoId.includes('http') ?
+              (videoId.includes('embed') ? videoId : `https://www.youtube.com/embed/${videoId}`) :
+              `https://www.youtube.com/embed/${videoId}`;
+
+            // Persistir no Banco de Dados
+            databaseService.saveVideoAd({
+              companyName: data.companyName,
+              phone: data.phone,
+              address: data.address,
+              videoLink: data.videoLink,
+              embedUrl: embedUrl
+            }).then(() => {
+              // Adicionar à playlist local APÓS o pagamento e persistência
+              setAdVideos(prev => [...prev, embedUrl]);
+              setCurrentVideoIndex(adVideos.length); // Pula para o novo vídeo
+
+              setDialog({
+                isOpen: true,
+                title: 'Publicidade Ativada',
+                message: `O vídeo da "${data.companyName}" foi pago e adicionado à playlist com sucesso!`,
+                type: 'success'
+              });
+            }).catch(err => {
+              console.error("Erro ao salvar vídeo:", err);
+              setDialog({
+                isOpen: true,
+                title: 'Erro no Cadastro',
+                message: 'Houve um erro ao salvar seu vídeo. Por favor, entre em contacto.',
+                type: 'error'
+              });
+            });
+
+            setShowVideoAdForm(false);
+          }}
+        />
+      )}
     </div>
   );
 };

@@ -7,6 +7,7 @@ interface CompanyFormProps {
     initialData?: CompanyDetail;
     onSubmit: (company: CompanyDetail) => void;
     onClose: () => void;
+    onAlert?: (title: string, message: string, type: 'success' | 'error' | 'info') => void;
 }
 
 const getProductLimit = (plan: PlanType): number => {
@@ -36,7 +37,7 @@ const getPlanPrice = (plan: PlanType, billingPeriod: BillingPeriod): number => {
     return monthlyPrice;
 };
 
-const CompanyForm: React.FC<CompanyFormProps> = ({ initialData, onSubmit, onClose }) => {
+const CompanyForm: React.FC<CompanyFormProps> = ({ initialData, onSubmit, onClose, onAlert }) => {
     const [formData, setFormData] = useState<CompanyDetail>(initialData || {
         registrationType: 'enterprise',
         name: '',
@@ -65,11 +66,21 @@ const CompanyForm: React.FC<CompanyFormProps> = ({ initialData, onSubmit, onClos
     const [isPaymentProcessing, setIsPaymentProcessing] = useState(false);
 
     const handleAddProductField = () => {
-        const limit = getProductLimit(formData.plan || 'Free');
+        const plan = formData.plan || 'Free';
+        if (plan === 'Free') {
+            onAlert?.('Atenção', "O plano gratuito não permite registar produtos. Faça o upgrade para um plano pago.", 'info');
+            return;
+        }
+        if (!hasPaidPlan && (initialData?.plan === 'Free' || !initialData)) {
+            onAlert?.('Atenção', "Por favor, efectue o pagamento do plano para activar o registo de produtos.", 'info');
+            return;
+        }
+
+        const limit = getProductLimit(plan);
         if (formData.products.length < limit) {
             setFormData({ ...formData, products: [...formData.products, { name: '', price: '' }] });
         } else {
-            alert(`Seu plano permite apenas ${limit} produtos.`);
+            onAlert?.('Limite Atingido', `Seu plano permite apenas ${limit} produtos.`, 'info');
         }
     };
 
@@ -81,16 +92,21 @@ const CompanyForm: React.FC<CompanyFormProps> = ({ initialData, onSubmit, onClos
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
+        if (!formData.name?.trim()) { onAlert?.('Atenção', "Por favor, preencha o nome.", 'info'); return; }
+        if (!formData.email?.trim()) { onAlert?.('Atenção', "Por favor, preencha o email.", 'info'); return; }
+        if (!formData.contact?.trim()) { onAlert?.('Atenção', "Por favor, preencha o contacto.", 'info'); return; }
+        if (!formData.activity?.trim()) { onAlert?.('Atenção', "Por favor, preencha a actividade.", 'info'); return; }
+        if (!formData.location?.trim()) { onAlert?.('Atenção', "Por favor, preencha a localização.", 'info'); return; }
         if (!formData.fullDescription?.trim()) {
-            alert("Por favor, preencha a descrição completa da empresa.");
+            onAlert?.('Atenção', "Por favor, preencha a descrição completa da empresa.", 'info');
             return;
         }
         if (formData.plan !== 'Free' && !hasPaidPlan) {
-            alert("Por favor, efectue o pagamento do plano.");
+            onAlert?.('Atenção', "Por favor, efectue o pagamento do plano.", 'info');
             return;
         }
         if (formData.isFeatured && !hasPaidFeatured) {
-            alert("Por favor, efectue o pagamento para destacar.");
+            onAlert?.('Atenção', "Por favor, efectue o pagamento para destacar.", 'info');
             return;
         }
         onSubmit(formData);
@@ -158,7 +174,7 @@ const CompanyForm: React.FC<CompanyFormProps> = ({ initialData, onSubmit, onClos
                 {/* Grid Logo (L) + Inputs (R) */}
                 <div className="grid grid-cols-[110px_1fr] gap-3">
                     <div className="relative h-full">
-                        <label className="flex flex-col items-center justify-center w-full h-full bg-white border border-dashed border-slate-200 rounded-lg cursor-pointer hover:border-emerald-400 hover:bg-emerald-50 transition-all overflow-hidden">
+                        <label className="flex flex-col items-center justify-center w-full h-full bg-white border border-dashed border-slate-200 rounded-lg cursor-pointer hover:border-orange-400 hover:bg-orange-50 transition-all overflow-hidden">
                             {formData.logo ? (
                                 <img src={formData.logo} className="w-full h-full object-cover" />
                             ) : (
@@ -321,7 +337,15 @@ const CompanyForm: React.FC<CompanyFormProps> = ({ initialData, onSubmit, onClos
                             <p className="text-[10px] text-slate-400 italic">O plano gratuito não permite registar produtos.</p>
                         </div>
                     ) : (
-                        <button type="button" onClick={handleAddProductField} className="w-full py-3 border border-dashed border-slate-300 rounded-lg text-slate-400 text-[11px] font-black uppercase">
+                        <button
+                            type="button"
+                            onClick={handleAddProductField}
+                            disabled={!hasPaidPlan && (initialData?.plan === 'Free' || !initialData)}
+                            className={`w-full py-3 border border-dashed rounded-lg text-[11px] font-black uppercase transition-all ${!hasPaidPlan && (initialData?.plan === 'Free' || !initialData)
+                                ? 'border-slate-200 text-slate-300 cursor-not-allowed'
+                                : 'border-slate-300 text-slate-400 hover:border-orange-400 hover:text-orange-500'
+                                }`}
+                        >
                             <i className="fa-solid fa-plus mr-1"></i> Adicionar
                         </button>
                     )}
@@ -352,7 +376,17 @@ const CompanyForm: React.FC<CompanyFormProps> = ({ initialData, onSubmit, onClos
                             <button
                                 key={p}
                                 type="button"
-                                onClick={() => { setFormData({ ...formData, plan: p, products: [] }); setHasPaidPlan(false); }}
+                                onClick={() => {
+                                    const isNowFeatured = p !== 'Free';
+                                    setFormData({
+                                        ...formData,
+                                        plan: p,
+                                        products: [],
+                                        isFeatured: isNowFeatured
+                                    });
+                                    setHasPaidPlan(false);
+                                    if (isNowFeatured) setHasPaidFeatured(true); // Se o plano é pago, o destaque está incluído/autorizado
+                                }}
                                 className={`p-2.5 rounded-lg border text-[12px] uppercase flex flex-col items-center gap-0.5 transition-all ${formData.plan === p ? 'bg-orange-500 border-orange-400 text-white shadow-md' : 'bg-white border-slate-200 text-slate-500'}`}
                             >
                                 <span className="font-bold">{p}</span>
@@ -371,20 +405,31 @@ const CompanyForm: React.FC<CompanyFormProps> = ({ initialData, onSubmit, onClos
                         <div className="relative flex justify-between items-start">
                             <div className="space-y-1">
                                 <h4 className="text-[12px] font-black text-orange-600 uppercase tracking-wider">Destacar Empresa</h4>
-                                <p className="text-[10px] text-orange-700/60 leading-tight pr-8">Apareça no topo dos resultados e ganhe 5x mais visibilidade no mercado nacional.</p>
+                                <p className="text-[10px] text-orange-700/60 leading-tight pr-8">
+                                    {formData.plan !== 'Free'
+                                        ? 'Destaque Premium incluído no seu plano pago!'
+                                        : 'Apareça no topo dos resultados e ganhe 5x mais visibilidade.'}
+                                </p>
                             </div>
                             <button
                                 type="button"
+                                disabled={formData.plan !== 'Free'}
                                 onClick={() => { setFormData({ ...formData, isFeatured: !formData.isFeatured }); setHasPaidFeatured(false); }}
-                                className={`w-12 h-6 rounded-full relative transition-colors duration-300 ${formData.isFeatured ? 'bg-orange-500' : 'bg-slate-200'}`}
+                                className={`w-12 h-6 rounded-full relative transition-colors duration-300 ${formData.isFeatured ? 'bg-orange-500' : 'bg-slate-200'} ${formData.plan !== 'Free' ? 'opacity-50 cursor-not-allowed' : ''}`}
                             >
                                 <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all duration-300 ${formData.isFeatured ? 'left-7' : 'left-1'}`} />
                             </button>
                         </div>
-                        {formData.isFeatured && (
+                        {formData.isFeatured && formData.plan === 'Free' && (
                             <div className="mt-3 pt-3 border-t border-orange-100 flex justify-between items-center">
-                                <span className="text-[10px] font-bold text-orange-600 uppercase">Custo Adicional</span>
+                                <span className="text-[10px] font-bold text-orange-600 uppercase">Taxa de Destaque</span>
                                 <span className="text-[11px] font-black text-orange-600">{formatCurrency(FEATURED_PRICE)} MT /mês</span>
+                            </div>
+                        )}
+                        {formData.isFeatured && formData.plan !== 'Free' && (
+                            <div className="mt-3 pt-3 border-t border-orange-100 flex justify-between items-center">
+                                <span className="text-[10px] font-bold text-emerald-600 uppercase">Benefício do Plano</span>
+                                <span className="text-[11px] font-black text-emerald-600">INCLUÍDO</span>
                             </div>
                         )}
                     </div>
@@ -403,7 +448,7 @@ const CompanyForm: React.FC<CompanyFormProps> = ({ initialData, onSubmit, onClos
                                     <span>Plano {formData.plan} ({formData.billingPeriod === 'monthly' ? 'Mensal' : 'Anual'})</span>
                                     <span className="font-bold text-slate-700">{formatCurrency(getPlanPrice(formData.plan!, formData.billingPeriod || 'monthly'))} MT</span>
                                 </div>
-                                {formData.isFeatured && (
+                                {formData.isFeatured && formData.plan === 'Free' && (
                                     <div className="flex justify-between text-[11px] text-slate-500">
                                         <span>Destaque Premium</span>
                                         <span className="font-bold text-slate-700">{formatCurrency(FEATURED_PRICE)} MT</span>
@@ -412,7 +457,7 @@ const CompanyForm: React.FC<CompanyFormProps> = ({ initialData, onSubmit, onClos
                                 <div className="pt-2 mt-2 border-t border-slate-200 flex justify-between items-center">
                                     <span className="text-[12px] font-black text-slate-800 uppercase">Total Geral</span>
                                     <span className="text-lg font-black text-[#10b981]">
-                                        {formatCurrency(getPlanPrice(formData.plan!, formData.billingPeriod || 'monthly') + (formData.isFeatured ? FEATURED_PRICE : 0))} MT
+                                        {formatCurrency(getPlanPrice(formData.plan!, formData.billingPeriod || 'monthly') + (formData.isFeatured && formData.plan === 'Free' ? FEATURED_PRICE : 0))} MT
                                     </span>
                                 </div>
                             </div>
@@ -571,13 +616,14 @@ const CompanyForm: React.FC<CompanyFormProps> = ({ initialData, onSubmit, onClos
                         </div>
                     )}
 
-                    <button
-                        type="submit"
-                        disabled={(formData.plan !== 'Free' && !hasPaidPlan) || (formData.isFeatured && !hasPaidFeatured)}
-                        className="w-full bg-[#1e293b] hover:bg-orange-500 text-white py-4 rounded-lg font-black text-xs uppercase tracking-widest shadow-xl transition-all active:scale-95 disabled:opacity-30"
-                    >
-                        Publicar Registo
-                    </button>
+                    {((formData.plan === 'Free') || (hasPaidPlan && (!formData.isFeatured || hasPaidFeatured))) && (
+                        <button
+                            type="submit"
+                            className="w-full bg-[#1e293b] hover:bg-orange-500 text-white py-4 rounded-lg font-black text-xs uppercase tracking-widest shadow-xl transition-all active:scale-95"
+                        >
+                            {formData.plan === 'Free' ? 'Publicar Registo Gratuito' : 'Finalizar e Publicar'}
+                        </button>
+                    )}
                 </div>
             </form>
 

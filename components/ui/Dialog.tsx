@@ -38,7 +38,7 @@ const Dialog: React.FC<DialogProps> = ({ isOpen, title, message, type = 'info', 
 
                 <button
                     onClick={onClose}
-                    className="w-full bg-[#10b981] hover:bg-emerald-600 text-white py-3.5 rounded-xl font-black text-[11px] uppercase tracking-widest shadow-lg shadow-emerald-50 active:scale-95 transition-all"
+                    className="w-full bg-[#10b981] hover:bg-orange-500 text-white py-3.5 rounded-xl font-black text-[11px] uppercase tracking-widest shadow-lg shadow-emerald-50 active:scale-95 transition-all"
                 >
                     Continuar
                 </button>

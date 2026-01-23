@@ -1,5 +1,25 @@
 import { supabase } from '../supabaseClient';
-import { CompanyDetail, PlantInfo } from '../types';
+import { CompanyDetail, PlantInfo, VideoAd } from '../types';
+
+const mapPlanToDB = (plan: string): string => {
+    const mapping: Record<string, string> = {
+        'Free': 'free',
+        'Básico': 'basic',
+        'Premium': 'premium',
+        'Parceiro': 'partner'
+    };
+    return mapping[plan] || 'free';
+};
+
+const mapDBToPlan = (plan: string): any => {
+    const mapping: Record<string, string> = {
+        'free': 'Free',
+        'basic': 'Básico',
+        'premium': 'Premium',
+        'partner': 'Parceiro'
+    };
+    return mapping[plan] || 'Free';
+};
 
 export const databaseService = {
     // Companies
@@ -13,45 +33,56 @@ export const databaseService = {
         if (error) throw error;
         return (data || []).map(d => ({
             ...d,
-            fullDescription: d.full_description,
+            fullDescription: d.description || '',
             billingPeriod: d.billing_period,
             isFeatured: d.is_featured,
             geoLocation: d.geo_location,
-            valueChain: d.value_chain
+            valueChain: d.value_chain,
+            logo: d.logo_url || '',
+            location: d.address || d.province || '',
+            plan: mapDBToPlan(d.plan),
+            products: d.products || []
         }));
     },
 
     async saveCompany(company: CompanyDetail, userId: string): Promise<CompanyDetail> {
         const { data, error } = await supabase
             .from('companies')
-            .insert({
+            .upsert({
+                id: company.id,
                 user_id: userId,
                 name: company.name,
                 email: company.email,
                 contact: company.contact,
                 activity: company.activity,
-                location: company.location,
+                address: company.geoLocation,
+                province: company.location,
                 geo_location: company.geoLocation,
                 value_chain: company.valueChain,
-                logo: company.logo,
-                full_description: company.fullDescription,
+                logo_url: company.logo,
+                description: company.fullDescription,
                 services: company.services,
                 products: company.products,
-                plan: company.plan,
+                plan: mapPlanToDB(company.plan as string),
                 billing_period: company.billingPeriod,
-                is_featured: company.isFeatured
-            })
+                is_featured: company.isFeatured,
+                registration_type: company.registrationType
+            }, { onConflict: 'user_id' })
             .select()
             .single();
 
         if (error) throw error;
         return {
             ...data,
-            fullDescription: data.full_description,
+            fullDescription: data.description || '',
             billingPeriod: data.billing_period,
             isFeatured: data.is_featured,
             geoLocation: data.geo_location,
-            valueChain: data.value_chain
+            valueChain: data.value_chain,
+            logo: data.logo_url || '',
+            location: data.address || data.province || '',
+            plan: mapDBToPlan(data.plan),
+            products: data.products || []
         };
     },
 
@@ -66,11 +97,59 @@ export const databaseService = {
         if (!data) return null;
         return {
             ...data,
-            fullDescription: data.full_description,
+            fullDescription: data.description || '',
             billingPeriod: data.billing_period,
             isFeatured: data.is_featured,
             geoLocation: data.geo_location,
-            valueChain: data.value_chain
+            valueChain: data.value_chain,
+            logo: data.logo_url || '',
+            location: data.address || data.province || '',
+            plan: mapDBToPlan(data.plan),
+            products: data.products || []
+        };
+    },
+
+    // Video Ads
+    async getVideoAds(): Promise<VideoAd[]> {
+        const { data, error } = await supabase
+            .from('video_ads')
+            .select('*')
+            .order('created_at', { ascending: false });
+
+        if (error) throw error;
+        return (data || []).map(d => ({
+            id: d.id,
+            companyName: d.company_name,
+            phone: d.phone,
+            address: d.address,
+            videoLink: d.video_link,
+            embedUrl: d.embed_url,
+            createdAt: d.created_at
+        }));
+    },
+
+    async saveVideoAd(ad: Partial<VideoAd>): Promise<VideoAd> {
+        const { data, error } = await supabase
+            .from('video_ads')
+            .insert({
+                company_name: ad.companyName,
+                phone: ad.phone,
+                address: ad.address,
+                video_link: ad.videoLink,
+                embed_url: ad.embedUrl
+            })
+            .select()
+            .single();
+
+        if (error) throw error;
+        return {
+            id: data.id,
+            companyName: data.company_name,
+            phone: data.phone,
+            address: data.address,
+            videoLink: data.video_link,
+            embedUrl: data.embed_url,
+            createdAt: data.created_at
         };
     },
 

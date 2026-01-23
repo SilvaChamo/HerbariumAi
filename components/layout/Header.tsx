@@ -40,7 +40,7 @@ const Header: React.FC<HeaderProps> = ({
                     </p>
                 </div>
                 <div className="flex gap-2 items-center">
-                    {myCompany && myCompany.plan !== 'Free' && (
+                    {myCompany && (
                         <button
                             onClick={onDashboardToggle}
                             className={`h-9 w-9 rounded-xl flex items-center justify-center transition-all ${showDashboard
@@ -61,7 +61,7 @@ const Header: React.FC<HeaderProps> = ({
                     )}
                     <button
                         onClick={() => setIsMenuOpen(true)}
-                        className="h-9 w-9 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-center hover:bg-emerald-50 text-emerald-600 transition-all"
+                        className="h-9 w-9 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-center hover:bg-orange-50 text-orange-600 transition-all"
                     >
                         <i className="fa-solid fa-bars-staggered text-sm"></i>
                     </button>
@@ -93,15 +93,15 @@ const Header: React.FC<HeaderProps> = ({
                             {categories.map((cat, idx) => (
                                 <button
                                     key={idx}
-                                    className="w-full flex items-center gap-3 p-2.5 px-4 rounded-xl hover:bg-emerald-50 transition-all group"
+                                    className="w-full flex items-center gap-3 p-2.5 px-4 rounded-xl hover:bg-orange-50 transition-all group"
                                     onClick={() => {
                                         setIsMenuOpen(false);
                                     }}
                                 >
-                                    <div className="w-9 h-9 bg-slate-50 text-slate-400 group-hover:bg-emerald-500 group-hover:text-white rounded-lg flex items-center justify-center text-sm transition-all shadow-sm">
+                                    <div className="w-9 h-9 bg-slate-50 text-slate-400 group-hover:bg-orange-500 group-hover:text-white rounded-lg flex items-center justify-center text-sm transition-all shadow-sm">
                                         <i className={`fa-solid ${cat.icon}`}></i>
                                     </div>
-                                    <span className="font-bold text-slate-700 group-hover:text-emerald-600 text-[13px]">{cat.label}</span>
+                                    <span className="font-bold text-slate-700 group-hover:text-orange-600 text-[13px]">{cat.label}</span>
                                 </button>
                             ))}
                         </div>

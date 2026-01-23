@@ -11,7 +11,7 @@ const NavBar: React.FC<NavBarProps> = ({ activeTab, onTabChange }) => {
         <nav className="bg-white border-t border-slate-100 flex justify-between items-center z-50">
             <button
                 onClick={() => onTabChange(AppTab.SCAN)}
-                className={`flex-1 py-4 flex flex-col items-center gap-1 transition-all ${activeTab === AppTab.SCAN ? 'text-[#10b981]' : 'text-slate-300'
+                className={`flex-1 py-4 flex flex-col items-center gap-1 transition-all ${activeTab === AppTab.SCAN ? 'text-[#f97316]' : 'text-slate-300'
                     }`}
             >
                 <i className="fa-solid fa-camera-retro text-xl"></i>
@@ -19,7 +19,7 @@ const NavBar: React.FC<NavBarProps> = ({ activeTab, onTabChange }) => {
             </button>
             <button
                 onClick={() => onTabChange(AppTab.COLLECTION)}
-                className={`flex-1 py-4 flex flex-col items-center gap-1 transition-all ${activeTab === AppTab.COLLECTION ? 'text-[#10b981]' : 'text-slate-300'
+                className={`flex-1 py-4 flex flex-col items-center gap-1 transition-all ${activeTab === AppTab.COLLECTION ? 'text-[#f97316]' : 'text-slate-300'
                     }`}
             >
                 <i className="fa-solid fa-chart-line text-xl"></i>
@@ -27,7 +27,7 @@ const NavBar: React.FC<NavBarProps> = ({ activeTab, onTabChange }) => {
             </button>
             <button
                 onClick={() => onTabChange(AppTab.DISCOVER)}
-                className={`flex-1 py-4 flex flex-col items-center gap-1 transition-all ${activeTab === AppTab.DISCOVER ? 'text-[#10b981]' : 'text-slate-300'
+                className={`flex-1 py-4 flex flex-col items-center gap-1 transition-all ${activeTab === AppTab.DISCOVER ? 'text-[#f97316]' : 'text-slate-300'
                     }`}
             >
                 <i className="fa-solid fa-box-archive text-xl"></i>
@@ -35,7 +35,7 @@ const NavBar: React.FC<NavBarProps> = ({ activeTab, onTabChange }) => {
             </button>
             <button
                 onClick={() => onTabChange(AppTab.ACCOUNT)}
-                className={`flex-1 py-4 flex flex-col items-center gap-1 transition-all ${activeTab === AppTab.ACCOUNT ? 'text-[#10b981]' : 'text-slate-300'
+                className={`flex-1 py-4 flex flex-col items-center gap-1 transition-all ${activeTab === AppTab.ACCOUNT ? 'text-[#f97316]' : 'text-slate-300'
                     }`}
             >
                 <i className="fa-solid fa-circle-user text-xl"></i>

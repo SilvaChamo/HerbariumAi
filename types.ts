@@ -86,3 +86,13 @@ export interface CompanyDetail {
   paymentMethod?: 'mpesa' | 'emola' | 'banco' | null;
   paymentPhone?: string;
 }
+
+export interface VideoAd {
+  id?: string;
+  companyName: string;
+  phone: string;
+  address: string;
+  videoLink: string;
+  embedUrl: string;
+  createdAt?: string;
+}

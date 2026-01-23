@@ -5,9 +5,10 @@ import { supabase } from '../../supabaseClient';
 interface AuthFormProps {
     onAuth: (user: User) => void;
     onNavigate: (tab: AppTab) => void;
+    onAlert?: (title: string, message: string, type: 'success' | 'error' | 'info') => void;
 }
 
-const AuthForm: React.FC<AuthFormProps> = ({ onAuth, onNavigate }) => {
+const AuthForm: React.FC<AuthFormProps> = ({ onAuth, onNavigate, onAlert }) => {
     const [isRegistering, setIsRegistering] = useState(false);
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
@@ -29,13 +30,26 @@ const AuthForm: React.FC<AuthFormProps> = ({ onAuth, onNavigate }) => {
                         },
                     },
                 });
-                if (error) throw error;
+                if (error) {
+                    if (error.message.includes('User already registered') || error.status === 422) {
+                        onAlert?.('Aviso', 'Este email já está registado. Por favor, faça login.', 'info');
+                        setIsRegistering(false);
+                        return;
+                    }
+                    throw error;
+                }
+
                 if (data.user) {
-                    onAuth({
-                        id: data.user.id,
-                        email: data.user.email || '',
-                        name: data.user.user_metadata.full_name || data.user.email?.split('@')[0] || ''
-                    });
+                    if (data.session) {
+                        onAuth({
+                            id: data.user.id,
+                            email: data.user.email || '',
+                            name: data.user.user_metadata.full_name || data.user.email?.split('@')[0] || ''
+                        });
+                    } else {
+                        onAlert?.('Sucesso', 'Registo realizado! Por favor, verifique o seu email para confirmar a conta.', 'success');
+                        setIsRegistering(false);
+                    }
                 }
             } else {
                 const { data, error } = await supabase.auth.signInWithPassword({
@@ -52,7 +66,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ onAuth, onNavigate }) => {
                 }
             }
         } catch (error: any) {
-            alert(error.message);
+            onAlert?.('Erro', error.message, 'error');
         } finally {
             setLoading(false);
         }
@@ -60,7 +74,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ onAuth, onNavigate }) => {
 
     const handleResetPassword = async () => {
         if (!email) {
-            alert("Por favor, insira o seu email primeiro.");
+            onAlert?.('Atenção', "Por favor, insira o seu email primeiro.", 'info');
             return;
         }
         setLoading(true);
@@ -69,9 +83,9 @@ const AuthForm: React.FC<AuthFormProps> = ({ onAuth, onNavigate }) => {
                 redirectTo: window.location.origin
             });
             if (error) throw error;
-            alert("Email de redefinição enviado! Verifique a sua caixa de entrada.");
+            onAlert?.('Sucesso', "Email de redefinição enviado! Verifique a sua caixa de entrada.", 'success');
         } catch (error: any) {
-            alert(error.message);
+            onAlert?.('Erro', error.message, 'error');
         } finally {
             setLoading(false);
         }
@@ -81,7 +95,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ onAuth, onNavigate }) => {
         <div className="p-8 h-full flex flex-col justify-center animate-in slide-in-from-bottom">
             <button
                 onClick={() => onNavigate(AppTab.SCAN)}
-                className="mb-10 flex flex-col items-center gap-2 text-slate-400 hover:text-emerald-500 transition-colors group w-full"
+                className="mb-10 flex flex-col items-center gap-2 text-slate-400 hover:text-orange-500 transition-colors group w-full"
             >
                 <div className="w-12 h-12 bg-white rounded-[10px] flex items-center justify-center border border-slate-100 shadow-sm group-hover:shadow-md transition-all">
                     <i className="fa-solid fa-arrow-left"></i>
@@ -155,7 +169,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ onAuth, onNavigate }) => {
                     <button
                         type="submit"
                         disabled={loading}
-                        className="w-full bg-[#10b981] hover:bg-emerald-600 text-white py-3.5 rounded-lg font-black text-xs uppercase tracking-widest shadow-lg shadow-emerald-100 transition-all active:scale-95 disabled:opacity-50 mt-2"
+                        className="w-full bg-[#10b981] hover:bg-orange-500 text-white py-3.5 rounded-lg font-black text-xs uppercase tracking-widest shadow-lg shadow-emerald-100 transition-all active:scale-95 disabled:opacity-50 mt-2"
                     >
                         {loading ? 'A PROCESSAR...' : (isRegistering ? 'FINALIZAR REGISTO' : 'ENTRAR AGORA')}
                     </button>

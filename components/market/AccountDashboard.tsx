@@ -51,7 +51,7 @@ const AccountDashboard: React.FC<AccountDashboardProps> = ({
                                 </div>
                                 <button
                                     onClick={onEditCompany}
-                                    className="w-10 h-10 bg-slate-50 rounded-xl flex items-center justify-center text-slate-400 hover:text-emerald-500 transition-colors"
+                                    className="w-10 h-10 bg-slate-50 rounded-xl flex items-center justify-center text-slate-400 hover:text-orange-500 transition-colors"
                                 >
                                     <i className="fa-solid fa-pen-to-square"></i>
                                 </button>
@@ -69,27 +69,69 @@ const AccountDashboard: React.FC<AccountDashboardProps> = ({
                                     <span className="text-[10px] font-black text-slate-700 uppercase">Factura / Recibo</span>
                                 </button>
 
-                                <div className="bg-white p-4 rounded-3xl border border-slate-100 shadow-sm flex flex-col items-center gap-3">
-                                    <div className="w-10 h-10 bg-emerald-50 text-emerald-500 rounded-xl flex items-center justify-center text-sm">
-                                        <i className="fa-solid fa-box-open"></i>
+                                <div className={`p-4 rounded-3xl border shadow-sm flex flex-col items-center gap-3 ${company.isFeatured ? 'bg-emerald-50 border-emerald-100' : 'bg-slate-50 border-slate-100 opacity-80'}`}>
+                                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-sm ${company.isFeatured ? 'bg-emerald-500 text-white' : 'bg-slate-200 text-slate-400'}`}>
+                                        <i className={`fa-solid ${company.isFeatured ? 'fa-eye' : 'fa-eye-slash'}`}></i>
                                     </div>
                                     <div className="text-center">
-                                        <span className="text-[10px] font-black text-slate-700 uppercase">Produtos</span>
-                                        <p className="text-[8px] font-bold text-slate-400">{company.products.length} Ativos</p>
+                                        <span className={`text-[10px] font-black uppercase ${company.isFeatured ? 'text-emerald-700' : 'text-slate-500'}`}>
+                                            {company.isFeatured ? 'Público' : 'Privado'}
+                                        </span>
+                                        <p className="text-[8px] font-bold text-slate-400">
+                                            {company.isFeatured ? 'Visível no Mercado' : 'Invisível no Mercado'}
+                                        </p>
                                     </div>
                                 </div>
                             </div>
 
-                            {/* Verification Info */}
-                            <div className="bg-emerald-500 p-5 rounded-3xl text-white shadow-lg shadow-emerald-100 relative overflow-hidden">
-                                <i className="fa-solid fa-shield-check absolute -right-4 -bottom-4 text-white/10 text-6xl"></i>
+                            {/* Verification & Visibility Info */}
+                            <div className={`p-5 rounded-3xl text-white shadow-lg relative overflow-hidden ${company.isFeatured ? 'bg-emerald-500 shadow-emerald-100' : 'bg-slate-700 shadow-slate-200'}`}>
+                                <i className={`fa-solid ${company.isFeatured ? 'fa-shield-check' : 'fa-lock'} absolute -right-4 -bottom-4 text-white/10 text-6xl`}></i>
                                 <div className="relative z-10 flex items-center gap-3">
-                                    <i className="fa-solid fa-circle-check text-xl"></i>
+                                    <i className={`fa-solid ${company.isFeatured ? 'fa-circle-check' : 'fa-circle-info'} text-xl`}></i>
                                     <div>
-                                        <p className="text-[11px] font-black uppercase tracking-wider">Conta Verificada</p>
-                                        <p className="text-[9px] font-bold opacity-80">Seus dados estão protegidos e publicados no mercado.</p>
+                                        <p className="text-[11px] font-black uppercase tracking-wider">
+                                            {company.isFeatured ? 'Conta Publicada' : 'Aguardando Destaque'}
+                                        </p>
+                                        <p className="text-[9px] font-bold opacity-80">
+                                            {company.isFeatured
+                                                ? 'Sua empresa está em destaque no mercado nacional.'
+                                                : 'Sua empresa é visível apenas para si. Pague a taxa ou mude de plano para publicar.'}
+                                        </p>
                                     </div>
                                 </div>
+                            </div>
+
+                            {/* Product List Section */}
+                            <div className="space-y-3">
+                                <div className="flex justify-between items-center px-1">
+                                    <h3 className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Catálogo de Produtos</h3>
+                                    <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full">{company.products.length} Ativos</span>
+                                </div>
+
+                                {company.products.length > 0 ? (
+                                    <div className="space-y-2">
+                                        {company.products.map((prod, idx) => (
+                                            <div key={idx} className="bg-white p-3 rounded-2xl border border-slate-100 shadow-sm flex justify-between items-center">
+                                                <div className="flex items-center gap-3">
+                                                    <div className="w-8 h-8 bg-emerald-50 text-emerald-600 rounded-lg flex items-center justify-center text-xs">
+                                                        <i className="fa-solid fa-box"></i>
+                                                    </div>
+                                                    <div>
+                                                        <p className="text-xs font-bold text-slate-700">{prod.name}</p>
+                                                        <p className="text-[9px] text-slate-400 uppercase font-black">{prod.category || 'Geral'}</p>
+                                                    </div>
+                                                </div>
+                                                <span className="text-xs font-black text-emerald-600">{prod.price}</span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                ) : (
+                                    <div className="bg-slate-50 border border-dashed border-slate-200 p-6 rounded-2xl text-center">
+                                        <p className="text-[10px] text-slate-400 font-bold uppercase tracking-tight">Nenhum produto cadastrado</p>
+                                        <button onClick={onEditCompany} className="mt-2 text-[10px] font-black text-emerald-600 hover:text-orange-500 hover:underline">Adicionar Itens</button>
+                                    </div>
+                                )}
                             </div>
                         </div>
                     ) : (
