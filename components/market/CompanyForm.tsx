@@ -12,7 +12,7 @@ interface CompanyFormProps {
 
 const getProductLimit = (plan: PlanType): number => {
     if (plan === 'Parceiro') return Infinity;
-    if (plan === 'Premium') return 20;
+    if (plan === 'Premium') return 15;
     if (plan === 'Básico') return 5;
     return 0;
 };
@@ -78,15 +78,26 @@ const CompanyForm: React.FC<CompanyFormProps> = ({ initialData, onSubmit, onClos
 
         const limit = getProductLimit(plan);
         if (formData.products.length < limit) {
-            setFormData({ ...formData, products: [...formData.products, { name: '', price: '' }] });
+            setFormData({ ...formData, products: [...formData.products, { name: '', price: '', photo: '', description: '', available: true }] });
         } else {
             onAlert?.('Limite Atingido', `Seu plano permite apenas ${limit} produtos.`, 'info');
         }
     };
 
-    const updateProduct = (index: number, field: 'name' | 'price', value: string) => {
+    const updateProduct = (index: number, field: 'name' | 'price' | 'photo' | 'description', value: string) => {
         const newProducts = [...formData.products];
         newProducts[index][field] = value;
+        setFormData({ ...formData, products: newProducts });
+    };
+
+    const toggleProductAvailability = (index: number) => {
+        const newProducts = [...formData.products];
+        newProducts[index].available = !newProducts[index].available;
+        setFormData({ ...formData, products: newProducts });
+    };
+
+    const removeProduct = (index: number) => {
+        const newProducts = formData.products.filter((_, i) => i !== index);
         setFormData({ ...formData, products: newProducts });
     };
 
@@ -327,9 +338,99 @@ const CompanyForm: React.FC<CompanyFormProps> = ({ initialData, onSubmit, onClos
                         {formData.plan !== 'Parceiro' && <button type="button" className="text-[9px] font-black text-orange-500 bg-orange-50 px-2 py-1 rounded-md uppercase" onClick={() => alert("Contacte a nossa equipa para upgrade.")}>Upgrade</button>}
                     </div>
                     {formData.products.map((prod, idx) => (
-                        <div key={idx} className="grid grid-cols-2 gap-2 animate-in fade-in duration-200">
-                            <input required type="text" placeholder="Item" value={prod.name} onChange={e => updateProduct(idx, 'name', e.target.value)} className="bg-white border border-slate-200 p-2.5 rounded-lg text-xs" />
-                            <input required type="text" placeholder="Preço" value={prod.price} onChange={e => updateProduct(idx, 'price', e.target.value)} className="bg-white border border-slate-200 p-2.5 rounded-lg text-xs text-[#10b981]" />
+                        <div key={idx} className="bg-white border border-slate-200 rounded-lg p-3 space-y-3 animate-in fade-in duration-200">
+                            {/* Product Header with Remove Button */}
+                            <div className="flex justify-between items-center">
+                                <span className="text-[10px] font-black text-slate-400 uppercase">Produto #{idx + 1}</span>
+                                <button
+                                    type="button"
+                                    onClick={() => removeProduct(idx)}
+                                    className="text-red-400 hover:text-red-600 transition-colors"
+                                >
+                                    <i className="fa-solid fa-trash text-[10px]"></i>
+                                </button>
+                            </div>
+
+                            {/* Product Photo */}
+                            <div className="relative">
+                                <label className="flex flex-col items-center justify-center w-full h-32 bg-slate-50 border border-dashed border-slate-200 rounded-lg cursor-pointer hover:border-orange-400 hover:bg-orange-50 transition-all overflow-hidden">
+                                    {prod.photo ? (
+                                        <img src={prod.photo} className="w-full h-full object-cover" alt="Produto" />
+                                    ) : (
+                                        <>
+                                            <i className="fa-solid fa-camera text-slate-300 text-2xl mb-1"></i>
+                                            <span className="text-[9px] font-bold text-slate-400 uppercase">Foto do Produto</span>
+                                        </>
+                                    )}
+                                    <input
+                                        type="file"
+                                        accept="image/*"
+                                        className="hidden"
+                                        onChange={(e) => {
+                                            const file = e.target.files?.[0];
+                                            if (file) {
+                                                const reader = new FileReader();
+                                                reader.onloadend = () => {
+                                                    updateProduct(idx, 'photo', reader.result as string);
+                                                };
+                                                reader.readAsDataURL(file);
+                                            }
+                                        }}
+                                    />
+                                </label>
+                                {prod.photo && (
+                                    <button
+                                        type="button"
+                                        onClick={() => updateProduct(idx, 'photo', '')}
+                                        className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center shadow-lg"
+                                    >
+                                        <i className="fa-solid fa-xmark text-[9px]"></i>
+                                    </button>
+                                )}
+                            </div>
+
+                            {/* Product Name and Price */}
+                            <div className="grid grid-cols-2 gap-2">
+                                <input
+                                    required
+                                    type="text"
+                                    placeholder="Nome do Produto"
+                                    value={prod.name}
+                                    onChange={e => updateProduct(idx, 'name', e.target.value)}
+                                    className="bg-white border border-slate-200 p-2.5 rounded-lg text-[11px] focus:border-emerald-400 outline-none"
+                                />
+                                <input
+                                    type="text"
+                                    placeholder="Preço (MT)"
+                                    value={prod.price}
+                                    onChange={e => updateProduct(idx, 'price', e.target.value)}
+                                    className="bg-white border border-slate-200 p-2.5 rounded-lg text-[11px] text-emerald-600 font-bold focus:border-emerald-400 outline-none"
+                                />
+                            </div>
+
+                            {/* Product Description */}
+                            <textarea
+                                placeholder="Descrição do produto..."
+                                value={prod.description}
+                                onChange={e => updateProduct(idx, 'description', e.target.value)}
+                                className="w-full bg-white border border-slate-200 p-2.5 rounded-lg text-[11px] focus:border-emerald-400 outline-none resize-none"
+                                rows={2}
+                            />
+
+                            {/* Availability Switcher */}
+                            <div className="flex justify-between items-center pt-2 border-t border-slate-100">
+                                <div>
+                                    <p className="text-[10px] font-bold text-slate-600">Disponibilidade</p>
+                                    <p className="text-[9px] text-slate-400">{prod.available !== false ? 'Disponível' : 'Indisponível'}</p>
+                                </div>
+                                <button
+                                    type="button"
+                                    onClick={() => toggleProductAvailability(idx)}
+                                    className={`w-12 h-6 rounded-full relative transition-colors duration-300 ${prod.available !== false ? 'bg-emerald-500' : 'bg-slate-300'}`}
+                                >
+                                    <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all duration-300 shadow-sm ${prod.available !== false ? 'left-7' : 'left-1'}`} />
+                                </button>
+                            </div>
                         </div>
                     ))}
                     {formData.plan === 'Free' ? (
@@ -377,7 +478,8 @@ const CompanyForm: React.FC<CompanyFormProps> = ({ initialData, onSubmit, onClos
                                 key={p}
                                 type="button"
                                 onClick={() => {
-                                    const isNowFeatured = p !== 'Free';
+                                    // Only Parceiro plan gets featured automatically
+                                    const isNowFeatured = p === 'Parceiro';
                                     setFormData({
                                         ...formData,
                                         plan: p,
@@ -385,13 +487,17 @@ const CompanyForm: React.FC<CompanyFormProps> = ({ initialData, onSubmit, onClos
                                         isFeatured: isNowFeatured
                                     });
                                     setHasPaidPlan(false);
-                                    if (isNowFeatured) setHasPaidFeatured(true); // Se o plano é pago, o destaque está incluído/autorizado
+                                    // Only Parceiro has featured included/authorized automatically
+                                    if (p === 'Parceiro') setHasPaidFeatured(true);
                                 }}
                                 className={`p-2.5 rounded-lg border text-[12px] uppercase flex flex-col items-center gap-0.5 transition-all ${formData.plan === p ? 'bg-orange-500 border-orange-400 text-white shadow-md' : 'bg-white border-slate-200 text-slate-500'}`}
                             >
                                 <span className="font-bold">{p}</span>
                                 <span className="opacity-70 text-[11px] font-normal">
                                     {p === 'Free' ? '0 MT' : `${formatCurrency(getPlanPrice(p, formData.billingPeriod || 'monthly'))} MT`}
+                                </span>
+                                <span className="opacity-60 text-[9px] font-medium mt-0.5">
+                                    {p === 'Free' ? '0 produtos' : p === 'Básico' ? '5 produtos' : p === 'Premium' ? '15 produtos' : 'Ilimitado'}
                                 </span>
                             </button>
                         ))}
@@ -406,27 +512,29 @@ const CompanyForm: React.FC<CompanyFormProps> = ({ initialData, onSubmit, onClos
                             <div className="space-y-1">
                                 <h4 className="text-[12px] font-black text-orange-600 uppercase tracking-wider">Destacar Empresa</h4>
                                 <p className="text-[10px] text-orange-700/60 leading-tight pr-8">
-                                    {formData.plan !== 'Free'
-                                        ? 'Destaque Premium incluído no seu plano pago!'
-                                        : 'Apareça no topo dos resultados e ganhe 5x mais visibilidade.'}
+                                    {formData.plan === 'Parceiro'
+                                        ? 'Destaque Premium incluído no plano Parceiro!'
+                                        : formData.plan === 'Free'
+                                            ? 'Apareça no topo dos resultados e ganhe 5x mais visibilidade.'
+                                            : 'Adicione destaque premium por apenas 1.000 MT/mês extra.'}
                                 </p>
                             </div>
                             <button
                                 type="button"
-                                disabled={formData.plan !== 'Free'}
+                                disabled={formData.plan === 'Parceiro'}
                                 onClick={() => { setFormData({ ...formData, isFeatured: !formData.isFeatured }); setHasPaidFeatured(false); }}
-                                className={`w-12 h-6 rounded-full relative transition-colors duration-300 ${formData.isFeatured ? 'bg-orange-500' : 'bg-slate-200'} ${formData.plan !== 'Free' ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                className={`w-12 h-6 rounded-full relative transition-colors duration-300 ${formData.isFeatured ? 'bg-orange-500' : 'bg-slate-200'} ${formData.plan === 'Parceiro' ? 'opacity-50 cursor-not-allowed' : ''}`}
                             >
                                 <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all duration-300 ${formData.isFeatured ? 'left-7' : 'left-1'}`} />
                             </button>
                         </div>
-                        {formData.isFeatured && formData.plan === 'Free' && (
+                        {formData.isFeatured && (formData.plan === 'Free' || formData.plan === 'Básico' || formData.plan === 'Premium') && (
                             <div className="mt-3 pt-3 border-t border-orange-100 flex justify-between items-center">
                                 <span className="text-[10px] font-bold text-orange-600 uppercase">Taxa de Destaque</span>
                                 <span className="text-[11px] font-black text-orange-600">{formatCurrency(FEATURED_PRICE)} MT /mês</span>
                             </div>
                         )}
-                        {formData.isFeatured && formData.plan !== 'Free' && (
+                        {formData.isFeatured && formData.plan === 'Parceiro' && (
                             <div className="mt-3 pt-3 border-t border-orange-100 flex justify-between items-center">
                                 <span className="text-[10px] font-bold text-emerald-600 uppercase">Benefício do Plano</span>
                                 <span className="text-[11px] font-black text-emerald-600">INCLUÍDO</span>
@@ -448,7 +556,7 @@ const CompanyForm: React.FC<CompanyFormProps> = ({ initialData, onSubmit, onClos
                                     <span>Plano {formData.plan} ({formData.billingPeriod === 'monthly' ? 'Mensal' : 'Anual'})</span>
                                     <span className="font-bold text-slate-700">{formatCurrency(getPlanPrice(formData.plan!, formData.billingPeriod || 'monthly'))} MT</span>
                                 </div>
-                                {formData.isFeatured && formData.plan === 'Free' && (
+                                {formData.isFeatured && formData.plan !== 'Parceiro' && (
                                     <div className="flex justify-between text-[11px] text-slate-500">
                                         <span>Destaque Premium</span>
                                         <span className="font-bold text-slate-700">{formatCurrency(FEATURED_PRICE)} MT</span>
@@ -457,7 +565,10 @@ const CompanyForm: React.FC<CompanyFormProps> = ({ initialData, onSubmit, onClos
                                 <div className="pt-2 mt-2 border-t border-slate-200 flex justify-between items-center">
                                     <span className="text-[12px] font-black text-slate-800 uppercase">Total Geral</span>
                                     <span className="text-lg font-black text-[#10b981]">
-                                        {formatCurrency(getPlanPrice(formData.plan!, formData.billingPeriod || 'monthly') + (formData.isFeatured && formData.plan === 'Free' ? FEATURED_PRICE : 0))} MT
+                                        {formatCurrency(
+                                            getPlanPrice(formData.plan!, formData.billingPeriod || 'monthly') +
+                                            (formData.isFeatured && formData.plan !== 'Parceiro' ? FEATURED_PRICE : 0)
+                                        )} MT
                                     </span>
                                 </div>
                             </div>

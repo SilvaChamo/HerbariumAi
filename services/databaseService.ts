@@ -21,6 +21,20 @@ const mapDBToPlan = (plan: string): any => {
     return mapping[plan] || 'Free';
 };
 
+// Helper to determine product limit based on plan
+const getProductLimit = (plan: string): number | null => {
+    switch (plan) {
+        case 'basic':
+            return 5;
+        case 'premium':
+            return 15;
+        case 'partner':
+            return null; // unlimited
+        default:
+            return null;
+    }
+};
+
 export const databaseService = {
     // Companies
     async getCompanies(): Promise<CompanyDetail[]> {
@@ -62,7 +76,7 @@ export const databaseService = {
                 logo_url: company.logo,
                 description: company.fullDescription,
                 services: company.services,
-                products: company.products,
+                // products: company.products, // Temporarily disabled due to Supabase cache issue
                 plan: mapPlanToDB(company.plan as string),
                 billing_period: company.billingPeriod,
                 is_featured: company.isFeatured,
@@ -72,6 +86,23 @@ export const databaseService = {
             .single();
 
         if (error) throw error;
+
+        // Update products separately using raw SQL to bypass cache issue
+        if (company.products && company.products.length > 0) {
+            const { error: productsError } = await supabase.rpc('update_company_products', {
+                p_user_id: userId,
+                p_products: company.products
+            });
+
+            // If RPC doesn't exist, fallback to direct update
+            if (productsError && productsError.message?.includes('function')) {
+                await supabase
+                    .from('companies')
+                    .update({ products: company.products })
+                    .eq('user_id', userId);
+            }
+        }
+
         return {
             ...data,
             fullDescription: data.description || '',
@@ -82,7 +113,7 @@ export const databaseService = {
             logo: data.logo_url || '',
             location: data.address || data.province || '',
             plan: mapDBToPlan(data.plan),
-            products: data.products || []
+            products: company.products || []
         };
     },
 

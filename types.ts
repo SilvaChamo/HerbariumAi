@@ -79,12 +79,19 @@ export interface CompanyDetail {
   logo: string;
   fullDescription: string;
   services: string;
-  products: { name: string; price?: string }[];
+  products: {
+    name: string;
+    price?: string;
+    photo?: string;
+    description?: string;
+    available?: boolean;
+  }[];
   plan?: PlanType;
   billingPeriod?: BillingPeriod;
   isFeatured?: boolean;
   paymentMethod?: 'mpesa' | 'emola' | 'banco' | null;
   paymentPhone?: string;
+  productLimit?: number | null; // new field indicating max products for the plan
 }
 
 export interface VideoAd {
