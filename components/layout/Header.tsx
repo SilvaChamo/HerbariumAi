@@ -33,7 +33,7 @@ const Header: React.FC<HeaderProps> = ({
             <header className="px-6 py-5 bg-white border-b border-slate-100 flex justify-between items-center z-[60] relative">
                 <div onClick={onLogoClick}>
                     <h1 className="text-xl font-bold text-[#1e293b] tracking-tight cursor-pointer">
-                        Herbarium<span className="text-[#10b981]">AI</span>
+                        Botánica<span className="text-[#10b981]">AI</span>
                     </h1>
                     <p className="text-slate-400 text-[10px] font-bold uppercase tracking-[0.2em]">
                         {user ? `Olá, ${user.name}` : 'BEM-VINDO(A)'}
@@ -89,7 +89,27 @@ const Header: React.FC<HeaderProps> = ({
                             </button>
                         </div>
 
-                        <div className="flex-1 overflow-y-auto p-2 space-y-1">
+                        <div className="flex-1 overflow-y-auto p-2 space-y-2">
+                            {/* Call to action for registration */}
+                            <div className="px-2 mb-4">
+                                <button
+                                    onClick={() => {
+                                        setIsMenuOpen(false);
+                                        onLogoClick(); // Back to main
+                                        // We need a way to trigger form from here, 
+                                        // but since Header doesn't have setShowCompanyForm,
+                                        // we'll rely on the user navigating or we'll pass a prop.
+                                        // For now, let's keep it simple: navigate to Discover and show form.
+                                        window.dispatchEvent(new CustomEvent('open-company-form'));
+                                    }}
+                                    className="w-full bg-emerald-500 text-white p-4 rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-lg shadow-emerald-100 flex items-center justify-center gap-3 active:scale-95 transition-all"
+                                >
+                                    <i className="fa-solid fa-building-circle-plus text-sm"></i>
+                                    Cadastrar Minha Empresa
+                                </button>
+                            </div>
+
+                            <span className="text-[9px] font-black text-slate-300 uppercase tracking-[0.2em] px-4">Directório</span>
                             {categories.map((cat, idx) => (
                                 <button
                                     key={idx}

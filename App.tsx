@@ -99,8 +99,23 @@ const App: React.FC = () => {
       }
     });
 
-    return () => subscription.unsubscribe();
-  }, []);
+    const handleOpenForm = () => {
+      setActiveTab(AppTab.DISCOVER);
+      if (!user) {
+        setPendingRegister(true);
+        setActiveTab(AppTab.AUTH);
+      } else {
+        setShowCompanyForm(true);
+      }
+    };
+
+    window.addEventListener('open-company-form', handleOpenForm);
+
+    return () => {
+      subscription.unsubscribe();
+      window.removeEventListener('open-company-form', handleOpenForm);
+    };
+  }, [user]);
 
   // Efeito para trocar vídeos da playlist automaticamente
   useEffect(() => {

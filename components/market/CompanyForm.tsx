@@ -316,26 +316,42 @@ const CompanyForm: React.FC<CompanyFormProps> = ({ initialData, onSubmit, onClos
                 </div>
 
                 {/* Services Section */}
-                <div className="space-y-3 pt-1">
-                    <p className="text-[10px] font-black text-emerald-600 uppercase tracking-widest px-1">
-                        {isEnterprise ? 'Serviços Prestados' : 'Serviços Especializados'}
-                    </p>
-                    <textarea
-                        rows={7}
-                        value={formData.services}
-                        onChange={e => setFormData({ ...formData, services: e.target.value })}
-                        className="w-full bg-white border border-slate-200 p-3 rounded-lg text-[12px] focus:border-emerald-400 outline-none transition-all shadow-sm"
-                        placeholder="Detalhes adicionais..."
-                    />
+                <div className="space-y-3 pt-3">
+                    <div className="flex items-center gap-2 px-1">
+                        <div className="w-8 h-8 bg-emerald-50 text-emerald-600 rounded-lg flex items-center justify-center">
+                            <i className="fa-solid fa-handshake-angle text-xs"></i>
+                        </div>
+                        <p className="text-[10px] font-black text-[#1e293b] uppercase tracking-widest">
+                            {isEnterprise ? 'Nossos Serviços' : 'Meus Serviços'}
+                        </p>
+                    </div>
+                    <div className="relative">
+                        <textarea
+                            rows={4}
+                            value={formData.services}
+                            onChange={e => setFormData({ ...formData, services: e.target.value })}
+                            className="w-full bg-slate-50 border border-slate-200 p-4 rounded-2xl text-[12px] focus:border-emerald-400 focus:bg-white outline-none transition-all shadow-inner"
+                            placeholder="Descreva detalhadamente o que oferece (ex: Consultoria, Venda, Aluguer...)"
+                        />
+                    </div>
                 </div>
 
-                {/* Products/Honoraries Section */}
-                <div className="space-y-3 pt-2">
+                {/* Products Section */}
+                <div className="space-y-4 pt-4 border-t border-slate-100">
                     <div className="flex justify-between items-center px-1">
-                        <p className="text-[10px] font-black text-emerald-600 uppercase tracking-widest">
-                            {isEnterprise ? 'Catálogo' : 'Tabela de Honorários'}
-                        </p>
-                        {formData.plan !== 'Parceiro' && <button type="button" className="text-[9px] font-black text-orange-500 bg-orange-50 px-2 py-1 rounded-md uppercase" onClick={() => alert("Contacte a nossa equipa para upgrade.")}>Upgrade</button>}
+                        <div className="flex items-center gap-2">
+                            <div className="w-8 h-8 bg-orange-50 text-orange-500 rounded-lg flex items-center justify-center">
+                                <i className="fa-solid fa-boxes-stacked text-xs"></i>
+                            </div>
+                            <p className="text-[10px] font-black text-[#1e293b] uppercase tracking-widest">
+                                {isEnterprise ? 'Catálogo de Produtos' : 'Preçário / Honorários'}
+                            </p>
+                        </div>
+                        {formData.plan !== 'Parceiro' && (
+                            <span className="text-[9px] font-bold text-slate-400 bg-slate-100 px-2 py-1 rounded-md">
+                                {formData.products.length} / {formData.plan === 'Free' ? '0' : getProductLimit(formData.plan || 'Free')}
+                            </span>
+                        )}
                     </div>
                     {formData.products.map((prod, idx) => (
                         <div key={idx} className="bg-white border border-slate-200 rounded-lg p-3 space-y-3 animate-in fade-in duration-200">

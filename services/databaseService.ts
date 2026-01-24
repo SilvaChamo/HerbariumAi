@@ -55,7 +55,9 @@ export const databaseService = {
             logo: d.logo_url || '',
             location: d.address || d.province || '',
             plan: mapDBToPlan(d.plan),
-            products: d.products || []
+            products: d.products || [],
+            slug: d.slug,
+            isVerified: d.is_verified
         }));
     },
 
@@ -136,7 +138,9 @@ export const databaseService = {
             logo: data.logo_url || '',
             location: data.address || data.province || '',
             plan: mapDBToPlan(data.plan),
-            products: data.products || []
+            products: data.products || [],
+            slug: data.slug,
+            isVerified: data.is_verified
         };
     },
 

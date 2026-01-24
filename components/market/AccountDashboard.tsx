@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { QRCodeCanvas } from 'qrcode.react';
 import { User, CompanyDetail } from '../../types';
 import InvoiceReceipt from './InvoiceReceipt';
 
@@ -18,6 +19,14 @@ const AccountDashboard: React.FC<AccountDashboardProps> = ({
     onLogout
 }) => {
     const [showReceipt, setShowReceipt] = useState(false);
+    const [showQRCode, setShowQRCode] = useState(false);
+
+    const publicUrl = `https://agrodata.co.mz/directory/${company?.slug}`;
+
+    const handleWhatsAppShare = () => {
+        const message = `Olá! Conheça a minha empresa no diretório oficial Agro Data: ${publicUrl}`;
+        window.open(`https://wa.me/?text=${encodeURIComponent(message)}`, '_blank');
+    };
 
     return (
         <div className="flex-1 overflow-y-auto animate-in fade-in slide-in-from-bottom flex flex-col">
@@ -31,7 +40,7 @@ const AccountDashboard: React.FC<AccountDashboardProps> = ({
                     <p className="text-xs text-slate-400 font-medium">{user.email}</p>
                 </div>
                 <div className="px-4 py-1.5 bg-emerald-50 text-emerald-600 rounded-full text-[10px] font-black uppercase tracking-widest border border-emerald-100">
-                    Membro Herbarium AI
+                    Membro Botánica AI
                 </div>
             </div>
 
@@ -46,7 +55,10 @@ const AccountDashboard: React.FC<AccountDashboardProps> = ({
                             <div className="bg-white p-4 rounded-3xl border border-slate-100 shadow-sm flex items-center gap-4">
                                 <img src={company.logo || 'https://via.placeholder.com/150'} className="w-14 h-14 rounded-2xl object-cover border border-slate-50" />
                                 <div className="flex-1 min-w-0">
-                                    <h4 className="font-bold text-[#1e293b] truncate uppercase text-xs">{company.name}</h4>
+                                    <div className="flex items-center gap-1.5 min-w-0">
+                                        <h4 className="font-bold text-[#1e293b] truncate uppercase text-xs">{company.name}</h4>
+                                        {company.isVerified && <i className="fa-solid fa-circle-check text-emerald-500 text-[10px]"></i>}
+                                    </div>
                                     <p className="text-[10px] text-emerald-600 font-bold">Plano {company.plan}</p>
                                 </div>
                                 <button
@@ -82,6 +94,130 @@ const AccountDashboard: React.FC<AccountDashboardProps> = ({
                                         </p>
                                     </div>
                                 </div>
+                            </div>
+
+                            {/* Verification & Visibility Info */}
+                            <div className={`p-5 rounded-3xl text-white shadow-lg relative overflow-hidden ${company.isFeatured ? 'bg-emerald-500 shadow-emerald-100' : 'bg-slate-700 shadow-slate-200'}`}>
+                                <i className={`fa-solid ${company.isFeatured ? 'fa-shield-check' : 'fa-lock'} absolute -right-4 -bottom-4 text-white/10 text-6xl`}></i>
+                                <div className="relative z-10 flex items-center gap-3">
+                                    <i className={`fa-solid ${company.isFeatured ? 'fa-circle-check' : 'fa-circle-info'} text-xl`}></i>
+                                    <div>
+                                        <p className="text-[11px] font-black uppercase tracking-wider">
+                                            {company.isFeatured ? 'Conta Publicada' : 'Aguardando Destaque'}
+                                        </p>
+                                        <p className="text-[9px] font-bold opacity-80">
+                                            {company.isFeatured
+                                                ? 'Sua empresa está em destaque no mercado nacional.'
+                                                : 'Sua empresa é visível apenas para si. Pague a taxa ou mude de plano para publicar.'}
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Performance & Impact Dashboard */}
+                            <div className="bg-slate-900 rounded-[2.5rem] p-6 space-y-6 shadow-xl shadow-slate-200 relative overflow-hidden">
+                                {/* Decorative elements */}
+                                <div className="absolute -top-10 -right-10 w-32 h-32 bg-emerald-500/10 rounded-full blur-3xl"></div>
+                                <div className="absolute -bottom-10 -left-10 w-32 h-32 bg-orange-500/10 rounded-full blur-3xl"></div>
+
+                                <div className="flex items-center justify-between relative">
+                                    <div className="space-y-1">
+                                        <h4 className="text-[10px] font-black text-emerald-400 uppercase tracking-[0.2em]">Painel de Performance</h4>
+                                        <p className="text-[14px] font-bold text-white leading-tight">Impacto do seu Negócio</p>
+                                    </div>
+                                    <div className="bg-emerald-500/20 px-3 py-1 rounded-full border border-emerald-500/30">
+                                        <span className="text-[9px] font-black text-emerald-400 uppercase tracking-widest animate-pulse">Live</span>
+                                    </div>
+                                </div>
+
+                                <div className="grid grid-cols-2 gap-3 relative">
+                                    <div className="bg-white/5 backdrop-blur-md border border-white/10 p-4 rounded-3xl space-y-1">
+                                        <div className="flex items-center gap-2 text-slate-400 mb-1">
+                                            <i className="fa-solid fa-eye text-[10px]"></i>
+                                            <span className="text-[9px] font-black uppercase tracking-widest">Visitas</span>
+                                        </div>
+                                        <div className="flex items-baseline gap-2">
+                                            <span className="text-2xl font-black text-white">124</span>
+                                            <span className="text-[10px] font-bold text-emerald-400">+12%</span>
+                                        </div>
+                                    </div>
+                                    <div className="bg-white/5 backdrop-blur-md border border-white/10 p-4 rounded-3xl space-y-1">
+                                        <div className="flex items-center gap-2 text-slate-400 mb-1">
+                                            <i className="fa-brands fa-whatsapp text-[10px]"></i>
+                                            <span className="text-[9px] font-black uppercase tracking-widest">Contactos</span>
+                                        </div>
+                                        <div className="flex items-baseline gap-2">
+                                            <span className="text-2xl font-black text-white">18</span>
+                                            <span className="text-[10px] font-bold text-emerald-400">+5</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="bg-white/5 backdrop-blur-md border border-white/10 p-4 rounded-3xl flex items-center justify-between relative">
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-10 h-10 bg-orange-500/20 rounded-xl flex items-center justify-center text-orange-500">
+                                            <i className="fa-brands fa-google text-lg"></i>
+                                        </div>
+                                        <div>
+                                            <p className="text-[10px] font-black text-white uppercase tracking-widest">Status no Google</p>
+                                            <p className="text-[11px] text-slate-400 font-medium">Indexação em curso...</p>
+                                        </div>
+                                    </div>
+                                    <div className="flex gap-1">
+                                        <div className="w-1.5 h-1.5 bg-orange-500 rounded-full animate-bounce"></div>
+                                        <div className="w-1.5 h-1.5 bg-orange-500 rounded-full animate-bounce [animation-delay:-0.15s]"></div>
+                                        <div className="w-1.5 h-1.5 bg-orange-500 rounded-full animate-bounce [animation-delay:-0.3s]"></div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Google & Share Link */}
+                            <div className="bg-slate-50 border border-slate-100 p-4 rounded-3xl space-y-3">
+                                <div className="flex items-center justify-between">
+                                    <h4 className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Identidade Digital (SEO)</h4>
+                                    <div className="flex gap-2 text-slate-300">
+                                        <i className="fa-brands fa-google text-[10px]"></i>
+                                        <i className="fa-brands fa-whatsapp text-[10px]"></i>
+                                    </div>
+                                </div>
+
+                                <div className="bg-white p-3 rounded-2xl border border-slate-100 space-y-3">
+                                    <div className="flex items-center gap-2 overflow-hidden">
+                                        <span className="text-[10px] text-slate-500 font-medium truncate flex-1 opacity-70">
+                                            agrodata.co.mz/directory/{company.slug || 'gerando...'}
+                                        </span>
+                                        <div className="flex gap-1">
+                                            <button
+                                                onClick={() => {
+                                                    navigator.clipboard.writeText(publicUrl);
+                                                    alert('Link copiado!');
+                                                }}
+                                                className="w-8 h-8 bg-slate-50 text-slate-400 rounded-lg flex items-center justify-center text-[10px] hover:bg-emerald-50 hover:text-emerald-600 transition-all"
+                                                title="Copiar Link"
+                                            >
+                                                <i className="fa-solid fa-copy"></i>
+                                            </button>
+                                            <button
+                                                onClick={handleWhatsAppShare}
+                                                className="w-8 h-8 bg-emerald-50 text-emerald-600 rounded-lg flex items-center justify-center text-[10px] hover:bg-emerald-500 hover:text-white transition-all"
+                                                title="Partilhar no WhatsApp"
+                                            >
+                                                <i className="fa-brands fa-whatsapp"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    <button
+                                        onClick={() => setShowQRCode(true)}
+                                        className="w-full py-2.5 bg-slate-900 text-white rounded-xl text-[9px] font-black uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-orange-500 active:scale-95 transition-all"
+                                    >
+                                        <i className="fa-solid fa-qrcode text-xs"></i>
+                                        Ver QR Code do Negócio
+                                    </button>
+                                </div>
+                                <p className="text-[8px] text-slate-400 font-bold leading-relaxed px-1">
+                                    Use este link e o QR Code no seu material de marketing para que o Google e clientes encontrem a sua empresa mais rápido.
+                                </p>
                             </div>
 
                             {/* Verification & Visibility Info */}
@@ -191,6 +327,52 @@ const AccountDashboard: React.FC<AccountDashboardProps> = ({
                     company={company}
                     onClose={() => setShowReceipt(false)}
                 />
+            )}
+
+            {/* QR Code Modal */}
+            {showQRCode && company && (
+                <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] flex items-center justify-center p-6 animate-in fade-in">
+                    <div className="bg-white w-full max-w-sm rounded-[2.5rem] overflow-hidden shadow-2xl animate-in zoom-in-95 duration-300">
+                        <div className="p-8 text-center space-y-6">
+                            <div className="space-y-2">
+                                <h3 className="text-xl font-black text-slate-900 uppercase tracking-tight">QR Code Profissional</h3>
+                                <p className="text-xs text-slate-400 font-medium">Capture clientes do mundo físico para o seu perfil digital</p>
+                            </div>
+
+                            <div className="bg-slate-50 p-6 rounded-[2rem] inline-block border-4 border-white shadow-inner">
+                                <QRCodeCanvas
+                                    value={publicUrl}
+                                    size={200}
+                                    level="H"
+                                    includeMargin={false}
+                                    imageSettings={{
+                                        src: company.logo || '',
+                                        x: undefined,
+                                        y: undefined,
+                                        height: 40,
+                                        width: 40,
+                                        excavate: true,
+                                    }}
+                                />
+                            </div>
+
+                            <div className="space-y-4">
+                                <div className="bg-emerald-50 p-4 rounded-2xl border border-emerald-100">
+                                    <p className="text-[10px] font-bold text-emerald-700 leading-relaxed">
+                                        Imprima este código em cartões de visita, banners ou embalagens de produtos.
+                                    </p>
+                                </div>
+
+                                <button
+                                    onClick={() => setShowQRCode(false)}
+                                    className="w-full py-4 bg-slate-900 text-white rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-orange-500 transition-colors"
+                                >
+                                    Fechar Janela
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             )}
         </div>
     );

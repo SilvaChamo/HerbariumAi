@@ -68,6 +68,7 @@ export type ValueChainRole = 'Consumidor' | 'Produtor' | 'Fornecedor';
 
 export interface CompanyDetail {
   id?: string;
+  slug?: string;
   registrationType?: 'enterprise' | 'professional';
   name: string;
   email?: string;
@@ -89,6 +90,7 @@ export interface CompanyDetail {
   plan?: PlanType;
   billingPeriod?: BillingPeriod;
   isFeatured?: boolean;
+  isVerified?: boolean;
   paymentMethod?: 'mpesa' | 'emola' | 'banco' | null;
   paymentPhone?: string;
   productLimit?: number | null; // new field indicating max products for the plan

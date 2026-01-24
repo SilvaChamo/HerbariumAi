@@ -76,6 +76,18 @@ const Scanner: React.FC<ScannerProps> = ({ onPlantIdentified, onLoadingChange })
                     >
                         Capturar Agora
                     </button>
+
+                    {/* Registration Shortcut on Home/Scanner */}
+                    <div className="pt-4 border-t border-slate-100 w-full">
+                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">É um profissional ou empresa?</p>
+                        <button
+                            onClick={() => window.dispatchEvent(new CustomEvent('open-company-form'))}
+                            className="text-emerald-600 font-black text-[11px] uppercase tracking-tighter hover:text-orange-500 flex items-center justify-center gap-2 mx-auto"
+                        >
+                            Cadastre seu negócio aqui
+                            <i className="fa-solid fa-arrow-right-long"></i>
+                        </button>
+                    </div>
                 </div>
             ) : (
                 <div className="w-full h-full flex flex-col p-4 space-y-4">
