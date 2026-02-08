@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { AppTab, PlantInfo, User, CompanyDetail } from './types';
 
 // Layout Components
@@ -9,10 +9,11 @@ import LoadingOverlay from './components/layout/LoadingOverlay';
 // Feature Components
 import PlantDetail from './components/PlantDetail';
 import Scanner from './components/scanner/Scanner';
-import AuthForm from './components/auth/AuthForm';
-import Dialog from './components/ui/Dialog';
+import AuthForm from './components/auth/AuthForm'; // Re-added AuthForm as it was likely an error in the instruction's provided block
+import Dialog from './components/ui/Dialog'; // Re-added Dialog as it was likely an error in the instruction's provided block
 import CompanyForm from './components/market/CompanyForm';
 import CompanyDetailView from './components/market/CompanyDetailView';
+import { SkeletonCard, SkeletonHeader } from './components/ui/SkeletonLoader';
 import MarketDashboard from './components/market/MarketDashboard';
 import AccountDashboard from './components/market/AccountDashboard';
 import VideoAdForm from './components/market/VideoAdForm';
@@ -27,13 +28,10 @@ const App: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [selectedPlant, setSelectedPlant] = useState<PlantInfo | null>(null);
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
+  const [filteredResults, setFilteredResults] = useState<any[]>([]);
 
   // Playlist de Vídeos Publicitários (30 Segundos em Loop)
-  const [adVideos, setAdVideos] = useState<string[]>([
-    'https://www.youtube.com/embed/dFkpQz2Zw0c',
-    'https://www.youtube.com/embed/Y4goaZhNt4k',
-    'https://www.youtube.com/embed/df1RYxkASyw'
-  ]);
+  const [adVideos, setAdVideos] = useState<string[]>([]);
   const [currentVideoIndex, setCurrentVideoIndex] = useState(0);
 
   const [showCompanyForm, setShowCompanyForm] = useState(false);
@@ -47,6 +45,8 @@ const App: React.FC = () => {
 
   const [currentSlide, setCurrentSlide] = useState(0);
   const [pendingRegister, setPendingRegister] = useState(false);
+  const [deferredPrompt, setDeferredPrompt] = useState<any>(null); // State for PWA install prompt
+
   const [dialog, setDialog] = useState<{ isOpen: boolean, title: string, message: string, type: 'success' | 'error' | 'info' }>({
     isOpen: false,
     title: '',
@@ -64,34 +64,39 @@ const App: React.FC = () => {
       .then(ads => {
         if (ads.length > 0) {
           const dbEmbeds = ads.map(ad => ad.embedUrl);
-          // Manter os exemplos e adicionar os do banco no início ou fim
-          setAdVideos(prev => [...prev, ...dbEmbeds]);
+          setAdVideos(prev => {
+            const existing = new Set(prev);
+            const nouveaux = dbEmbeds.filter(url => !existing.has(url));
+            return [...prev, ...nouveaux];
+          });
         }
       })
       .catch(console.error);
 
-    // 3. Sincronizar Sessão
+    // 3. Sincronizar Sessão Inicial
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session?.user) {
         const userData = {
           id: session.user.id,
           email: session.user.email || '',
-          name: session.user.user_metadata.full_name || session.user.email?.split('@')[0] || ''
+          name: session.user.user_metadata.full_name || 'Usuário'
         };
         setUser(userData);
         loadUserData(userData.id);
       }
     });
 
+    // 4. Ouvinte de Mudança de Autenticação
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       if (session?.user) {
         const userData = {
           id: session.user.id,
           email: session.user.email || '',
-          name: session.user.user_metadata.full_name || session.user.email?.split('@')[0] || ''
+          name: session.user.user_metadata.full_name || 'Usuário'
         };
-        setUser(userData);
-        loadUserData(userData.id);
+        // Só actualiza se os dados mudarem efectivamente
+        setUser(prev => prev?.id === userData.id ? prev : userData);
+        loadUserData(session.user.id);
       } else {
         setUser(null);
         setCollection([]);
@@ -99,6 +104,13 @@ const App: React.FC = () => {
       }
     });
 
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, []); // Sem dependências para evitar loops infinitos
+
+  // Efeito isolado para o atalho de registo via evento customizado e instalação PWA
+  useEffect(() => {
     const handleOpenForm = () => {
       setActiveTab(AppTab.DISCOVER);
       if (!user) {
@@ -109,11 +121,17 @@ const App: React.FC = () => {
       }
     };
 
+    const handleBeforeInstallPrompt = (e: Event) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+    };
+
     window.addEventListener('open-company-form', handleOpenForm);
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
 
     return () => {
-      subscription.unsubscribe();
       window.removeEventListener('open-company-form', handleOpenForm);
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
     };
   }, [user]);
 
@@ -229,17 +247,78 @@ const App: React.FC = () => {
     }
   };
 
-  const handleLogoClick = () => {
+  const handleCategoryClick = async (category: string) => {
+    setLoading(true);
+    setActiveCategory(category);
+    try {
+      if (category === 'Empresas' || category === 'Agro-negócio' || category === 'Lojas de Insumos') {
+        const results = await databaseService.getCompanies();
+        setFilteredResults(results);
+      } else if (category === 'Profissionais') {
+        const results = await databaseService.getProfessionals();
+        setFilteredResults(results);
+      } else if (category === 'Produtos') {
+        const results = await databaseService.getProducts();
+        setFilteredResults(results);
+      } else {
+        const results = await databaseService.getCompaniesByCategory(category);
+        setFilteredResults(results);
+      }
+    } catch (err) {
+      console.error("Erro ao carregar categoria:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleGlobalSearch = useCallback(async (query: string) => {
+    setLoading(true);
+    setActiveCategory(`Busca: "${query}"`);
+    try {
+      const results = await databaseService.globalSearch(query);
+      setFilteredResults(results);
+    } catch (err) {
+      console.error("Erro na busca global:", err);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  const handleLogoClick = useCallback(() => {
     setShowDashboard(false);
     setViewingCompany(null);
     setShowCompanyForm(false);
-  };
+    setActiveCategory(null);
+    setFilteredResults([]);
+  }, []);
 
-  const handleTabChange = (tab: AppTab) => {
+  const handleTabChange = useCallback((tab: AppTab) => {
     setActiveTab(tab);
     setShowDashboard(false);
     setViewingCompany(null);
     setShowCompanyForm(false);
+  }, []);
+
+  const handleInstallClick = async () => {
+    if (!deferredPrompt) {
+      // Fallback para dispositivos não suportados (iOS, etc.)
+      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream;
+
+      setDialog({
+        isOpen: true,
+        title: 'Como Instalar',
+        message: isIOS
+          ? 'Para instalar no iPhone/iPad:\n1. Toque no botão de Partilha (quadrado com seta)\n2. Escolha "Adicionar ao Ecrã Principal"'
+          : 'Para instalar neste dispositivo:\nProcure a opção "Instalar Aplicativo" ou "Adicionar ao Ecrã Principal" no menu do seu navegador.',
+        type: 'info'
+      });
+      return;
+    }
+    deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
+    if (outcome === 'accepted') {
+      setDeferredPrompt(null);
+    }
   };
 
   return (
@@ -249,8 +328,12 @@ const App: React.FC = () => {
         myCompany={myCompany}
         showDashboard={showDashboard}
         onLogoClick={handleLogoClick}
-        onDashboardToggle={() => setShowDashboard(!showDashboard)}
+        onDashboardToggle={() => setShowDashboard(s => !s)}
         onLogout={handleLogout}
+        onNavigate={handleTabChange}
+        onSearch={handleGlobalSearch}
+        installPrompt={deferredPrompt}
+        onInstall={handleInstallClick}
       />
 
       <main className="flex-1 overflow-y-auto relative z-10">
@@ -260,6 +343,96 @@ const App: React.FC = () => {
             onClose={() => setShowDashboard(false)}
             onEdit={() => { setShowDashboard(false); setShowCompanyForm(true); }}
           />
+        ) : activeCategory && filteredResults ? (
+          <div className="flex flex-col animate-in fade-in pb-10">
+            {/* Category Header */}
+            {loading ? (
+              <SkeletonHeader />
+            ) : (
+              <div className="bg-white px-6 py-4 border-b border-slate-200 flex items-center justify-between sticky top-0 z-20">
+                <div className="flex items-center gap-3">
+                  <button
+                    onClick={() => { setActiveCategory(null); setFilteredResults([]); }}
+                    className="w-8 h-8 rounded-full bg-slate-50 flex items-center justify-center text-slate-400 hover:text-emerald-600 transition-colors"
+                  >
+                    <i className="fa-solid fa-arrow-left text-xs"></i>
+                  </button>
+                  <div className="leading-none">
+                    <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Mercado</h3>
+                    <h2 className="text-lg font-black text-slate-700 leading-none">{activeCategory}</h2>
+                  </div>
+                </div>
+                <div className="bg-emerald-50 px-3 py-1 rounded-full">
+                  <span className="text-[10px] font-black text-emerald-600">{filteredResults.length} Encontrados</span>
+                </div>
+              </div>
+            )}
+
+            {/* Results Grid */}
+            <div className="p-4 grid grid-cols-1 gap-4">
+              {loading ? (
+                <SkeletonCard count={6} />
+              ) : filteredResults.length > 0 ? (
+                filteredResults.map((item, idx) => (
+                  <div
+                    key={idx}
+                    onClick={() => {
+                      if (item.activity || item.searchType === 'Empresa') { // It's a company
+                        setViewingCompany(item);
+                        setActiveCategory(null);
+                        setFilteredResults([]);
+                      }
+                    }}
+                    className="bg-white border border-slate-200 rounded-[8px] p-4 flex gap-4 hover:border-emerald-400 transition-all cursor-pointer group"
+                  >
+                    <div className="w-16 h-16 rounded-[10px] bg-white overflow-hidden shrink-0 border border-slate-100 flex items-center justify-center p-2">
+                      <img
+                        src={item.logo || item.image_url || item.photo_url || 'https://via.placeholder.com/150'}
+                        className="w-full h-full object-contain group-hover:scale-110 transition-transform"
+                        alt={item.name}
+                      />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-start justify-between">
+                        <div>
+                          <h4 className="font-black text-slate-700 text-sm truncate">{item.name}</h4>
+                          <p className="text-[10px] text-slate-400 font-bold uppercase tracking-tight">
+                            {item.searchType ? `${item.searchType}: ` : ''}
+                            {item.role || item.activity || item.category || 'Membro'}
+                          </p>
+                        </div>
+                        {item.is_verified && (
+                          <i className="fa-solid fa-circle-check text-emerald-500 text-[10px]"></i>
+                        )}
+                      </div>
+                      <div className="mt-2 flex items-center gap-3">
+                        <div className="flex items-center gap-1">
+                          <i className="fa-solid fa-location-dot text-[9px] text-orange-400"></i>
+                          <span className="text-[9px] text-slate-400 font-medium">{item.location || 'Moçambique'}</span>
+                        </div>
+                        {item.rating && (
+                          <div className="flex items-center gap-1">
+                            <i className="fa-solid fa-star text-[9px] text-yellow-400"></i>
+                            <span className="text-[9px] text-slate-400 font-bold">{item.rating}</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="py-20 flex flex-col items-center justify-center text-center space-y-4">
+                  <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center">
+                    <i className="fa-solid fa-magnifying-glass text-slate-200 text-2xl"></i>
+                  </div>
+                  <div>
+                    <p className="text-xs font-black text-slate-400 uppercase tracking-widest">Nenhum resultado encontrado</p>
+                    <p className="text-[10px] text-slate-300 font-medium mt-1 px-10">Tente outra categoria ou verifique a sua ligação.</p>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
         ) : activeTab === AppTab.DISCOVER ? (
           <div className="p-0 flex flex-col animate-in fade-in">
             {showCompanyForm ? (
@@ -353,10 +526,10 @@ const App: React.FC = () => {
                     {['Empresas', 'Produtos', 'Profissionais', 'Agro-negócio'].map(cat => (
                       <button
                         key={cat}
-                        onClick={() => setActiveCategory(cat)}
-                        className="bg-white border border-slate-200 p-4 rounded-xl flex flex-col items-center gap-3 hover:border-orange-400 transition-all hover:shadow-lg hover:shadow-slate-100 group active:scale-95"
+                        onClick={() => handleCategoryClick(cat)}
+                        className="bg-white border border-slate-200 p-4 rounded-[10px] flex flex-col items-center gap-3 hover:border-orange-400 transition-all hover:shadow-lg hover:shadow-slate-100 group active:scale-95"
                       >
-                        <div className="w-10 h-10 bg-emerald-50 text-[#10b981] group-hover:bg-orange-500 group-hover:text-white rounded-lg flex items-center justify-center text-lg transition-all shadow-sm">
+                        <div className="w-10 h-10 bg-emerald-50 text-[#10b981] group-hover:bg-orange-500 group-hover:text-white rounded-[10px] flex items-center justify-center text-lg transition-all shadow-sm">
                           <i className={`fa-solid ${cat === 'Empresas' ? 'fa-building' : cat === 'Produtos' ? 'fa-box' : cat === 'Profissionais' ? 'fa-user' : 'fa-hands-holding-circle'}`}></i>
                         </div>
                         <span className="font-bold text-slate-700 text-[11px] uppercase tracking-tight">{cat}</span>
@@ -414,8 +587,8 @@ const App: React.FC = () => {
                   { label: 'Lojas de Insumos', icon: 'fa-shop' },
                   { label: 'Maquinaria', icon: 'fa-tractor' }
                 ].map(cat => (
-                  <button key={cat.label} onClick={() => setActiveCategory(cat.label)} className="bg-white border border-slate-200 p-4 rounded-xl flex flex-col items-center gap-3 hover:border-orange-400 transition-all group active:scale-95 shadow-sm">
-                    <div className="w-10 h-10 bg-emerald-50 text-[#10b981] group-hover:bg-orange-500 group-hover:text-white rounded-lg flex items-center justify-center text-lg transition-all">
+                  <button key={cat.label} onClick={() => handleCategoryClick(cat.label)} className="bg-white border border-slate-200 p-4 rounded-[10px] flex flex-col items-center gap-3 hover:border-orange-400 transition-all group active:scale-95 shadow-sm">
+                    <div className="w-10 h-10 bg-emerald-50 text-[#10b981] group-hover:bg-orange-500 group-hover:text-white rounded-[10px] flex items-center justify-center text-lg transition-all">
                       <i className={`fa-solid ${cat.icon}`}></i>
                     </div>
                     <span className="font-bold text-slate-800 text-[10px] uppercase">{cat.label}</span>

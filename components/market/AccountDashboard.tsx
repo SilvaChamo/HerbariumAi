@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { QRCodeCanvas } from 'qrcode.react';
 import { User, CompanyDetail } from '../../types';
 import InvoiceReceipt from './InvoiceReceipt';
+import { databaseService } from '../../services/databaseService';
 
 interface AccountDashboardProps {
     user: User;
@@ -20,6 +21,19 @@ const AccountDashboard: React.FC<AccountDashboardProps> = ({
 }) => {
     const [showReceipt, setShowReceipt] = useState(false);
     const [showQRCode, setShowQRCode] = useState(false);
+    const [showSupportForm, setShowSupportForm] = useState(false);
+    const [supportTicket, setSupportTicket] = useState({ subject: '', message: '' });
+    const [submitting, setSubmitting] = useState(false);
+    const [ticketSent, setTicketSent] = useState(false);
+    const [stats, setStats] = useState({ views: 0, leads: 0 });
+
+    useEffect(() => {
+        if (company?.id) {
+            databaseService.getCompanyStats(company.id)
+                .then(setStats)
+                .catch(console.error);
+        }
+    }, [company?.id]);
 
     const publicUrl = `https://agrodata.co.mz/directory/${company?.slug}`;
 
@@ -28,16 +42,35 @@ const AccountDashboard: React.FC<AccountDashboardProps> = ({
         window.open(`https://wa.me/?text=${encodeURIComponent(message)}`, '_blank');
     };
 
+    const handleSubmitTicket = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setSubmitting(true);
+        try {
+            await databaseService.submitSupportTicket({
+                user_id: user.id,
+                user_email: user.email,
+                subject: supportTicket.subject,
+                message: supportTicket.message
+            });
+            setTicketSent(true);
+            setSupportTicket({ subject: '', message: '' });
+        } catch (err) {
+            console.error('Erro ao enviar ticket:', err);
+            alert('Erro ao enviar ticket de suporte.');
+        } finally {
+            setSubmitting(false);
+        }
+    };
+
     return (
         <div className="flex-1 overflow-y-auto animate-in fade-in slide-in-from-bottom flex flex-col">
             {/* Profile Header */}
             <div className="bg-white p-8 border-b border-slate-100 flex flex-col items-center text-center space-y-4">
-                <div className="w-24 h-24 bg-gradient-to-br from-emerald-400 to-[#10b981] rounded-[2.5rem] flex items-center justify-center text-white text-3xl font-black shadow-xl shadow-emerald-100 border-4 border-white">
+                <div className="w-24 h-24 bg-gradient-to-br from-emerald-400 to-[#10b981] rounded-[10px] flex items-center justify-center text-white text-3xl font-black shadow-xl shadow-emerald-100 border-4 border-white">
                     {user.name.charAt(0).toUpperCase()}
                 </div>
                 <div>
                     <h2 className="text-xl font-bold text-[#1e293b]">{user.name}</h2>
-                    <p className="text-xs text-slate-400 font-medium">{user.email}</p>
                 </div>
                 <div className="px-4 py-1.5 bg-emerald-50 text-emerald-600 rounded-full text-[10px] font-black uppercase tracking-widest border border-emerald-100">
                     Membro Botánica AI
@@ -52,8 +85,8 @@ const AccountDashboard: React.FC<AccountDashboardProps> = ({
                     {company ? (
                         <div className="space-y-4">
                             {/* Company Card Mini */}
-                            <div className="bg-white p-4 rounded-3xl border border-slate-100 shadow-sm flex items-center gap-4">
-                                <img src={company.logo || 'https://via.placeholder.com/150'} className="w-14 h-14 rounded-2xl object-cover border border-slate-50" />
+                            <div className="bg-white p-4 rounded-[10px] border border-slate-100 shadow-sm flex items-center gap-4">
+                                <img src={company.logo || 'https://via.placeholder.com/150'} className="w-14 h-14 rounded-[10px] object-cover border border-slate-50" />
                                 <div className="flex-1 min-w-0">
                                     <div className="flex items-center gap-1.5 min-w-0">
                                         <h4 className="font-bold text-[#1e293b] truncate uppercase text-xs">{company.name}</h4>
@@ -63,7 +96,7 @@ const AccountDashboard: React.FC<AccountDashboardProps> = ({
                                 </div>
                                 <button
                                     onClick={onEditCompany}
-                                    className="w-10 h-10 bg-slate-50 rounded-xl flex items-center justify-center text-slate-400 hover:text-orange-500 transition-colors"
+                                    className="w-10 h-10 bg-slate-50 rounded-[10px] flex items-center justify-center text-slate-400 hover:text-orange-500 transition-colors"
                                 >
                                     <i className="fa-solid fa-pen-to-square"></i>
                                 </button>
@@ -73,16 +106,16 @@ const AccountDashboard: React.FC<AccountDashboardProps> = ({
                             <div className="grid grid-cols-2 gap-3">
                                 <button
                                     onClick={() => setShowReceipt(true)}
-                                    className="bg-white p-4 rounded-3xl border border-slate-100 shadow-sm flex flex-col items-center gap-3 group active:scale-95 transition-all"
+                                    className="bg-white p-4 rounded-[10px] border border-slate-100 shadow-sm flex flex-col items-center gap-3 group active:scale-95 transition-all"
                                 >
-                                    <div className="w-10 h-10 bg-orange-50 text-orange-500 rounded-xl flex items-center justify-center text-sm group-hover:bg-orange-500 group-hover:text-white transition-all">
+                                    <div className="w-10 h-10 bg-orange-50 text-orange-500 rounded-[10px] flex items-center justify-center text-sm group-hover:bg-orange-500 group-hover:text-white transition-all">
                                         <i className="fa-solid fa-receipt"></i>
                                     </div>
                                     <span className="text-[10px] font-black text-slate-700 uppercase">Factura / Recibo</span>
                                 </button>
 
-                                <div className={`p-4 rounded-3xl border shadow-sm flex flex-col items-center gap-3 ${company.isFeatured ? 'bg-emerald-50 border-emerald-100' : 'bg-slate-50 border-slate-100 opacity-80'}`}>
-                                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-sm ${company.isFeatured ? 'bg-emerald-500 text-white' : 'bg-slate-200 text-slate-400'}`}>
+                                <div className={`p-4 rounded-[10px] border shadow-sm flex flex-col items-center gap-3 ${company.isFeatured ? 'bg-emerald-50 border-emerald-100' : 'bg-slate-50 border-slate-100 opacity-80'}`}>
+                                    <div className={`w-10 h-10 rounded-[10px] flex items-center justify-center text-sm ${company.isFeatured ? 'bg-emerald-500 text-white' : 'bg-slate-200 text-slate-400'}`}>
                                         <i className={`fa-solid ${company.isFeatured ? 'fa-eye' : 'fa-eye-slash'}`}></i>
                                     </div>
                                     <div className="text-center">
@@ -97,7 +130,7 @@ const AccountDashboard: React.FC<AccountDashboardProps> = ({
                             </div>
 
                             {/* Verification & Visibility Info */}
-                            <div className={`p-5 rounded-3xl text-white shadow-lg relative overflow-hidden ${company.isFeatured ? 'bg-emerald-500 shadow-emerald-100' : 'bg-slate-700 shadow-slate-200'}`}>
+                            <div className={`p-5 rounded-[10px] text-white shadow-lg relative overflow-hidden ${company.isFeatured ? 'bg-emerald-500 shadow-emerald-100' : 'bg-slate-700 shadow-slate-200'}`}>
                                 <i className={`fa-solid ${company.isFeatured ? 'fa-shield-check' : 'fa-lock'} absolute -right-4 -bottom-4 text-white/10 text-6xl`}></i>
                                 <div className="relative z-10 flex items-center gap-3">
                                     <i className={`fa-solid ${company.isFeatured ? 'fa-circle-check' : 'fa-circle-info'} text-xl`}></i>
@@ -115,7 +148,7 @@ const AccountDashboard: React.FC<AccountDashboardProps> = ({
                             </div>
 
                             {/* Performance & Impact Dashboard */}
-                            <div className="bg-slate-900 rounded-[2.5rem] p-6 space-y-6 shadow-xl shadow-slate-200 relative overflow-hidden">
+                            <div className="bg-slate-900 rounded-[10px] p-6 space-y-6 shadow-xl shadow-slate-200 relative overflow-hidden">
                                 {/* Decorative elements */}
                                 <div className="absolute -top-10 -right-10 w-32 h-32 bg-emerald-500/10 rounded-full blur-3xl"></div>
                                 <div className="absolute -bottom-10 -left-10 w-32 h-32 bg-orange-500/10 rounded-full blur-3xl"></div>
@@ -131,31 +164,31 @@ const AccountDashboard: React.FC<AccountDashboardProps> = ({
                                 </div>
 
                                 <div className="grid grid-cols-2 gap-3 relative">
-                                    <div className="bg-white/5 backdrop-blur-md border border-white/10 p-4 rounded-3xl space-y-1">
+                                    <div className="bg-white/5 backdrop-blur-md border border-white/10 p-4 rounded-[10px] space-y-1">
                                         <div className="flex items-center gap-2 text-slate-400 mb-1">
                                             <i className="fa-solid fa-eye text-[10px]"></i>
                                             <span className="text-[9px] font-black uppercase tracking-widest">Visitas</span>
                                         </div>
                                         <div className="flex items-baseline gap-2">
-                                            <span className="text-2xl font-black text-white">124</span>
-                                            <span className="text-[10px] font-bold text-emerald-400">+12%</span>
+                                            <span className="text-2xl font-black text-white">{stats.views}</span>
+                                            <span className="text-[10px] font-bold text-emerald-400">Total</span>
                                         </div>
                                     </div>
-                                    <div className="bg-white/5 backdrop-blur-md border border-white/10 p-4 rounded-3xl space-y-1">
+                                    <div className="bg-white/5 backdrop-blur-md border border-white/10 p-4 rounded-[10px] space-y-1">
                                         <div className="flex items-center gap-2 text-slate-400 mb-1">
                                             <i className="fa-brands fa-whatsapp text-[10px]"></i>
-                                            <span className="text-[9px] font-black uppercase tracking-widest">Contactos</span>
+                                            <span className="text-[9px] font-black uppercase tracking-widest">Leads</span>
                                         </div>
                                         <div className="flex items-baseline gap-2">
-                                            <span className="text-2xl font-black text-white">18</span>
-                                            <span className="text-[10px] font-bold text-emerald-400">+5</span>
+                                            <span className="text-2xl font-black text-white">{stats.leads}</span>
+                                            <span className="text-[10px] font-bold text-emerald-400">Mensagens</span>
                                         </div>
                                     </div>
                                 </div>
 
-                                <div className="bg-white/5 backdrop-blur-md border border-white/10 p-4 rounded-3xl flex items-center justify-between relative">
+                                <div className="bg-white/5 backdrop-blur-md border border-white/10 p-4 rounded-[10px] flex items-center justify-between relative">
                                     <div className="flex items-center gap-3">
-                                        <div className="w-10 h-10 bg-orange-500/20 rounded-xl flex items-center justify-center text-orange-500">
+                                        <div className="w-10 h-10 bg-orange-500/20 rounded-[10px] flex items-center justify-center text-orange-500">
                                             <i className="fa-brands fa-google text-lg"></i>
                                         </div>
                                         <div>
@@ -172,7 +205,7 @@ const AccountDashboard: React.FC<AccountDashboardProps> = ({
                             </div>
 
                             {/* Google & Share Link */}
-                            <div className="bg-slate-50 border border-slate-100 p-4 rounded-3xl space-y-3">
+                            <div className="bg-slate-50 border border-slate-100 p-4 rounded-[10px] space-y-3">
                                 <div className="flex items-center justify-between">
                                     <h4 className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Identidade Digital (SEO)</h4>
                                     <div className="flex gap-2 text-slate-300">
@@ -181,7 +214,7 @@ const AccountDashboard: React.FC<AccountDashboardProps> = ({
                                     </div>
                                 </div>
 
-                                <div className="bg-white p-3 rounded-2xl border border-slate-100 space-y-3">
+                                <div className="bg-white p-3 rounded-[10px] border border-slate-100 space-y-3">
                                     <div className="flex items-center gap-2 overflow-hidden">
                                         <span className="text-[10px] text-slate-500 font-medium truncate flex-1 opacity-70">
                                             agrodata.co.mz/directory/{company.slug || 'gerando...'}
@@ -192,14 +225,14 @@ const AccountDashboard: React.FC<AccountDashboardProps> = ({
                                                     navigator.clipboard.writeText(publicUrl);
                                                     alert('Link copiado!');
                                                 }}
-                                                className="w-8 h-8 bg-slate-50 text-slate-400 rounded-lg flex items-center justify-center text-[10px] hover:bg-emerald-50 hover:text-emerald-600 transition-all"
+                                                className="w-8 h-8 bg-slate-50 text-slate-400 rounded-[10px] flex items-center justify-center text-[10px] hover:bg-emerald-50 hover:text-emerald-600 transition-all"
                                                 title="Copiar Link"
                                             >
                                                 <i className="fa-solid fa-copy"></i>
                                             </button>
                                             <button
                                                 onClick={handleWhatsAppShare}
-                                                className="w-8 h-8 bg-emerald-50 text-emerald-600 rounded-lg flex items-center justify-center text-[10px] hover:bg-emerald-500 hover:text-white transition-all"
+                                                className="w-8 h-8 bg-emerald-50 text-emerald-600 rounded-[10px] flex items-center justify-center text-[10px] hover:bg-emerald-500 hover:text-white transition-all"
                                                 title="Partilhar no WhatsApp"
                                             >
                                                 <i className="fa-brands fa-whatsapp"></i>
@@ -209,7 +242,7 @@ const AccountDashboard: React.FC<AccountDashboardProps> = ({
 
                                     <button
                                         onClick={() => setShowQRCode(true)}
-                                        className="w-full py-2.5 bg-slate-900 text-white rounded-xl text-[9px] font-black uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-orange-500 active:scale-95 transition-all"
+                                        className="w-full py-2.5 bg-slate-900 text-white rounded-[10px] text-[9px] font-black uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-orange-500 active:scale-95 transition-all"
                                     >
                                         <i className="fa-solid fa-qrcode text-xs"></i>
                                         Ver QR Code do Negócio
@@ -221,7 +254,7 @@ const AccountDashboard: React.FC<AccountDashboardProps> = ({
                             </div>
 
                             {/* Verification & Visibility Info */}
-                            <div className={`p-5 rounded-3xl text-white shadow-lg relative overflow-hidden ${company.isFeatured ? 'bg-emerald-500 shadow-emerald-100' : 'bg-slate-700 shadow-slate-200'}`}>
+                            <div className={`p-5 rounded-[10px] text-white shadow-lg relative overflow-hidden ${company.isFeatured ? 'bg-emerald-500 shadow-emerald-100' : 'bg-slate-700 shadow-slate-200'}`}>
                                 <i className={`fa-solid ${company.isFeatured ? 'fa-shield-check' : 'fa-lock'} absolute -right-4 -bottom-4 text-white/10 text-6xl`}></i>
                                 <div className="relative z-10 flex items-center gap-3">
                                     <i className={`fa-solid ${company.isFeatured ? 'fa-circle-check' : 'fa-circle-info'} text-xl`}></i>
@@ -248,9 +281,9 @@ const AccountDashboard: React.FC<AccountDashboardProps> = ({
                                 {company.products.length > 0 ? (
                                     <div className="space-y-2">
                                         {company.products.map((prod, idx) => (
-                                            <div key={idx} className="bg-white p-3 rounded-2xl border border-slate-100 shadow-sm flex justify-between items-center">
+                                            <div key={idx} className="bg-white p-3 rounded-[10px] border border-slate-100 shadow-sm flex justify-between items-center">
                                                 <div className="flex items-center gap-3">
-                                                    <div className="w-8 h-8 bg-emerald-50 text-emerald-600 rounded-lg flex items-center justify-center text-xs">
+                                                    <div className="w-8 h-8 bg-emerald-50 text-emerald-600 rounded-[10px] flex items-center justify-center text-xs">
                                                         <i className="fa-solid fa-box"></i>
                                                     </div>
                                                     <div>
@@ -263,7 +296,7 @@ const AccountDashboard: React.FC<AccountDashboardProps> = ({
                                         ))}
                                     </div>
                                 ) : (
-                                    <div className="bg-slate-50 border border-dashed border-slate-200 p-6 rounded-2xl text-center">
+                                    <div className="bg-slate-50 border border-dashed border-slate-200 p-6 rounded-[10px] text-center">
                                         <p className="text-[10px] text-slate-400 font-bold uppercase tracking-tight">Nenhum produto cadastrado</p>
                                         <button onClick={onEditCompany} className="mt-2 text-[10px] font-black text-emerald-600 hover:text-orange-500 hover:underline">Adicionar Itens</button>
                                     </div>
@@ -271,8 +304,8 @@ const AccountDashboard: React.FC<AccountDashboardProps> = ({
                             </div>
                         </div>
                     ) : (
-                        <div className="bg-white p-8 rounded-3xl border border-dashed border-slate-200 text-center space-y-4">
-                            <div className="w-16 h-16 bg-slate-50 text-slate-200 rounded-full flex items-center justify-center mx-auto text-2xl">
+                        <div className="bg-white/80 backdrop-blur-md rounded-[10px] p-4 border border-white shadow-sm flex items-center gap-3">
+                            <div className="h-10 w-10 bg-emerald-100 rounded-[10px] flex items-center justify-center text-emerald-600">
                                 <i className="fa-solid fa-building-circle-plus"></i>
                             </div>
                             <div>
@@ -281,7 +314,7 @@ const AccountDashboard: React.FC<AccountDashboardProps> = ({
                             </div>
                             <button
                                 onClick={onRegisterCompany}
-                                className="w-full py-4 bg-[#10b981] text-white rounded-2xl font-bold text-xs uppercase shadow-lg shadow-emerald-100"
+                                className="w-full py-4 bg-[#10b981] text-white rounded-[10px] font-bold text-xs uppercase shadow-lg shadow-emerald-100"
                             >
                                 Começar Agora
                             </button>
@@ -292,7 +325,7 @@ const AccountDashboard: React.FC<AccountDashboardProps> = ({
                 {/* Additional Settings/Info */}
                 <div className="pt-6 space-y-3">
                     <h3 className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Outras Definições</h3>
-                    <div className="bg-white rounded-3xl border border-slate-100 overflow-hidden">
+                    <div className="bg-white rounded-[10px] border border-slate-100 overflow-hidden">
                         <button className="w-full p-4 flex items-center justify-between hover:bg-slate-50 transition-colors border-b border-slate-50 text-left">
                             <div className="flex items-center gap-3">
                                 <i className="fa-solid fa-user-shield text-slate-300"></i>
@@ -300,14 +333,77 @@ const AccountDashboard: React.FC<AccountDashboardProps> = ({
                             </div>
                             <i className="fa-solid fa-chevron-right text-[10px] text-slate-300"></i>
                         </button>
-                        <button className="w-full p-4 flex items-center justify-between hover:bg-slate-50 transition-colors text-left">
+                        <button
+                            onClick={() => setShowSupportForm(!showSupportForm)}
+                            className="w-full p-4 flex items-center justify-between hover:bg-slate-50 transition-colors text-left"
+                        >
                             <div className="flex items-center gap-3">
                                 <i className="fa-solid fa-circle-question text-slate-300"></i>
-                                <span className="text-[11px] font-bold text-slate-700">Central de Ajuda</span>
+                                <span className="text-[11px] font-bold text-slate-700">Central de Ajuda & Suporte</span>
                             </div>
-                            <i className="fa-solid fa-chevron-right text-[10px] text-slate-300"></i>
+                            <i className={`fa-solid ${showSupportForm ? 'fa-chevron-up' : 'fa-chevron-down'} text-[10px] text-slate-300`}></i>
                         </button>
                     </div>
+
+                    {showSupportForm && (
+                        <div className="bg-white p-6 rounded-[10px] border border-slate-100 shadow-sm animate-in fade-in slide-in-from-top duration-300">
+                            <div className="flex items-center gap-3 mb-4">
+                                <div className="w-10 h-10 bg-emerald-50 text-emerald-600 rounded-[10px] flex items-center justify-center">
+                                    <i className="fa-solid fa-headset"></i>
+                                </div>
+                                <div>
+                                    <h4 className="text-sm font-black text-slate-800 uppercase tracking-tight">Suporte Técnico</h4>
+                                    <p className="text-[10px] text-slate-400 font-medium">Relate bugs ou peça ajuda</p>
+                                </div>
+                            </div>
+
+                            {ticketSent ? (
+                                <div className="p-6 bg-emerald-50 rounded-[10px] text-center space-y-2">
+                                    <i className="fa-solid fa-circle-check text-2xl text-emerald-500"></i>
+                                    <h5 className="text-xs font-black text-emerald-800">Ticket Recebido!</h5>
+                                    <p className="text-[9px] text-emerald-600 font-medium leading-relaxed">Nossa equipa analisará o seu pedido em breve.</p>
+                                    <button
+                                        onClick={() => setTicketSent(false)}
+                                        className="text-[9px] font-black text-emerald-600 uppercase border-b border-emerald-200 mt-2"
+                                    >
+                                        Novo Ticket
+                                    </button>
+                                </div>
+                            ) : (
+                                <form onSubmit={handleSubmitTicket} className="space-y-4">
+                                    <div className="space-y-1">
+                                        <label className="text-[9px] font-black text-slate-400 uppercase ml-2">Assunto</label>
+                                        <input
+                                            required
+                                            type="text"
+                                            value={supportTicket.subject}
+                                            onChange={e => setSupportTicket({ ...supportTicket, subject: e.target.value })}
+                                            className="w-full bg-slate-50 border border-slate-100 rounded-[10px] px-4 py-3 text-xs font-semibold focus:border-emerald-500 outline-none"
+                                            placeholder="Ex: Erro no Scanner, Pagamento..."
+                                        />
+                                    </div>
+                                    <div className="space-y-1">
+                                        <label className="text-[9px] font-black text-slate-400 uppercase ml-2">Descrição do Problema</label>
+                                        <textarea
+                                            required
+                                            value={supportTicket.message}
+                                            onChange={e => setSupportTicket({ ...supportTicket, message: e.target.value })}
+                                            rows={3}
+                                            className="w-full bg-slate-50 border border-slate-100 rounded-[10px] px-4 py-3 text-xs font-semibold focus:border-emerald-500 outline-none resize-none"
+                                            placeholder="Descreva o que está a acontecer..."
+                                        />
+                                    </div>
+                                    <button
+                                        type="submit"
+                                        disabled={submitting}
+                                        className="w-full py-3 bg-emerald-500 text-white rounded-[10px] text-[10px] font-black uppercase tracking-widest shadow-lg shadow-emerald-50 disabled:bg-slate-200"
+                                    >
+                                        {submitting ? 'A enviar...' : 'Abrir Ticket de Suporte'}
+                                    </button>
+                                </form>
+                            )}
+                        </div>
+                    )}
                 </div>
             </div>
 
@@ -315,7 +411,7 @@ const AccountDashboard: React.FC<AccountDashboardProps> = ({
             <div className="px-6 py-8">
                 <button
                     onClick={onLogout}
-                    className="w-full py-4 bg-slate-50 text-red-500 rounded-2xl font-black text-xs uppercase tracking-widest border border-red-50 active:scale-95 transition-all"
+                    className="w-full py-4 bg-slate-50 text-red-500 rounded-[10px] font-black text-xs uppercase tracking-widest border border-red-50 active:scale-95 transition-all"
                 >
                     Sair da Conta
                 </button>
@@ -332,14 +428,14 @@ const AccountDashboard: React.FC<AccountDashboardProps> = ({
             {/* QR Code Modal */}
             {showQRCode && company && (
                 <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] flex items-center justify-center p-6 animate-in fade-in">
-                    <div className="bg-white w-full max-w-sm rounded-[2.5rem] overflow-hidden shadow-2xl animate-in zoom-in-95 duration-300">
+                    <div className="bg-white w-full max-w-sm rounded-[10px] overflow-hidden shadow-2xl animate-in zoom-in-95 duration-300">
                         <div className="p-8 text-center space-y-6">
                             <div className="space-y-2">
                                 <h3 className="text-xl font-black text-slate-900 uppercase tracking-tight">QR Code Profissional</h3>
                                 <p className="text-xs text-slate-400 font-medium">Capture clientes do mundo físico para o seu perfil digital</p>
                             </div>
 
-                            <div className="bg-slate-50 p-6 rounded-[2rem] inline-block border-4 border-white shadow-inner">
+                            <div className="bg-slate-50 p-6 rounded-[10px] inline-block border-4 border-white shadow-inner">
                                 <QRCodeCanvas
                                     value={publicUrl}
                                     size={200}
@@ -357,7 +453,7 @@ const AccountDashboard: React.FC<AccountDashboardProps> = ({
                             </div>
 
                             <div className="space-y-4">
-                                <div className="bg-emerald-50 p-4 rounded-2xl border border-emerald-100">
+                                <div className="bg-emerald-50 p-4 rounded-[10px] border border-emerald-100">
                                     <p className="text-[10px] font-bold text-emerald-700 leading-relaxed">
                                         Imprima este código em cartões de visita, banners ou embalagens de produtos.
                                     </p>
@@ -365,7 +461,7 @@ const AccountDashboard: React.FC<AccountDashboardProps> = ({
 
                                 <button
                                     onClick={() => setShowQRCode(false)}
-                                    className="w-full py-4 bg-slate-900 text-white rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-orange-500 transition-colors"
+                                    className="w-full py-4 bg-slate-900 text-white rounded-[10px] font-black text-xs uppercase tracking-widest hover:bg-orange-500 transition-colors"
                                 >
                                     Fechar Janela
                                 </button>

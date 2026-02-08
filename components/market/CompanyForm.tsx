@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { CompanyDetail, PlanType, BillingPeriod } from '../../types';
-import { formatCurrency } from '../../utils';
+import { formatCurrency, compressImage } from '../../utils';
 import InvoiceReceipt from './InvoiceReceipt';
 
 interface CompanyFormProps {
@@ -140,7 +140,7 @@ const CompanyForm: React.FC<CompanyFormProps> = ({ initialData, onSubmit, onClos
             </div>
 
             {/* Registration Animated Tabs */}
-            <div className="relative bg-slate-100/50 p-1.5 rounded-lg flex gap-1 h-12 overflow-hidden">
+            <div className="relative bg-slate-100/50 p-1.5 rounded-[8px] flex gap-1 h-12 overflow-hidden">
                 {/* Sliding Background */}
                 <div
                     className={`absolute inset-y-1.5 w-[calc(50%-6px)] bg-orange-500/10 border border-orange-500 rounded-md transition-all duration-300 ease-out z-0`}
@@ -177,7 +177,7 @@ const CompanyForm: React.FC<CompanyFormProps> = ({ initialData, onSubmit, onClos
                         type="text"
                         value={formData.name}
                         onChange={e => setFormData({ ...formData, name: e.target.value })}
-                        className="w-full bg-white border border-slate-200 p-2.5 pl-11 rounded-lg text-[12px] text-slate-700 focus:border-emerald-400 outline-none transition-all shadow-sm"
+                        className="w-full bg-white border border-slate-200 p-2.5 pl-11 rounded-[8px] text-[12px] text-slate-700 focus:border-emerald-400 outline-none transition-all shadow-sm"
                         placeholder={isEnterprise ? "Nome da Empresa / Entidade" : "Nome Completo do Profissional"}
                     />
                 </div>
@@ -185,7 +185,7 @@ const CompanyForm: React.FC<CompanyFormProps> = ({ initialData, onSubmit, onClos
                 {/* Grid Logo (L) + Inputs (R) */}
                 <div className="grid grid-cols-[110px_1fr] gap-3">
                     <div className="relative h-full">
-                        <label className="flex flex-col items-center justify-center w-full h-full bg-white border border-dashed border-slate-200 rounded-lg cursor-pointer hover:border-orange-400 hover:bg-orange-50 transition-all overflow-hidden">
+                        <label className="flex flex-col items-center justify-center w-full h-full bg-white border border-dashed border-slate-200 rounded-[8px] cursor-pointer hover:border-orange-400 hover:bg-orange-50 transition-all overflow-hidden">
                             {formData.logo ? (
                                 <img src={formData.logo} className="w-full h-full object-cover" />
                             ) : (
@@ -200,14 +200,25 @@ const CompanyForm: React.FC<CompanyFormProps> = ({ initialData, onSubmit, onClos
                                 type="file"
                                 accept="image/*"
                                 className="hidden"
-                                onChange={(e) => {
+                                onChange={async (e) => {
                                     const file = e.target.files?.[0];
                                     if (file) {
-                                        const reader = new FileReader();
-                                        reader.onloadend = () => {
-                                            setFormData({ ...formData, logo: reader.result as string });
-                                        };
-                                        reader.readAsDataURL(file);
+                                        try {
+                                            const compressedBlob = await compressImage(file);
+                                            const reader = new FileReader();
+                                            reader.onloadend = () => {
+                                                setFormData({ ...formData, logo: reader.result as string });
+                                            };
+                                            reader.readAsDataURL(compressedBlob);
+                                        } catch (err) {
+                                            console.error("Erro ao processar imagem:", err);
+                                            // Fallback to original file if compression fails
+                                            const reader = new FileReader();
+                                            reader.onloadend = () => {
+                                                setFormData({ ...formData, logo: reader.result as string });
+                                            };
+                                            reader.readAsDataURL(file);
+                                        }
                                     }
                                 }}
                             />
@@ -226,7 +237,7 @@ const CompanyForm: React.FC<CompanyFormProps> = ({ initialData, onSubmit, onClos
                     <div className="space-y-3">
                         <div className="relative">
                             <i className="fa-solid fa-phone absolute left-3 top-1/2 -translate-y-1/2 text-slate-300 text-[11px]"></i>
-                            <input required type="tel" value={formData.contact} onChange={e => setFormData({ ...formData, contact: e.target.value })} className="w-full bg-white border border-slate-200 p-2.5 pl-9 rounded-lg text-[12px] focus:border-emerald-400 outline-none transition-all" placeholder="Telemóvel" />
+                            <input required type="tel" value={formData.contact} onChange={e => setFormData({ ...formData, contact: e.target.value })} className="w-full bg-white border border-slate-200 p-2.5 pl-9 rounded-[8px] text-[12px] focus:border-emerald-400 outline-none transition-all" placeholder="Telemóvel" />
                         </div>
                         <div className="relative">
                             <i className={`fa-solid ${isEnterprise ? 'fa-link' : 'fa-graduation-cap'} absolute left-3 top-1/2 -translate-y-1/2 text-slate-300 text-[11px]`}></i>
@@ -234,7 +245,7 @@ const CompanyForm: React.FC<CompanyFormProps> = ({ initialData, onSubmit, onClos
                                 required
                                 value={formData.valueChain}
                                 onChange={e => setFormData({ ...formData, valueChain: e.target.value as any })}
-                                className="w-full bg-white border border-slate-200 p-2.5 pl-9 rounded-lg text-[12px] outline-none appearance-none focus:border-emerald-400 transition-all pr-8"
+                                className="w-full bg-white border border-slate-200 p-2.5 pl-9 rounded-[8px] text-[12px] outline-none appearance-none focus:border-emerald-400 transition-all pr-8"
                             >
                                 {isEnterprise ? (
                                     <>
@@ -266,7 +277,7 @@ const CompanyForm: React.FC<CompanyFormProps> = ({ initialData, onSubmit, onClos
                                 required
                                 value={formData.location}
                                 onChange={e => setFormData({ ...formData, location: e.target.value })}
-                                className="w-full bg-white border border-slate-200 p-2.5 pl-9 rounded-lg text-[12px] outline-none appearance-none focus:border-emerald-400 transition-all pr-8"
+                                className="w-full bg-white border border-slate-200 p-2.5 pl-9 rounded-[8px] text-[12px] outline-none appearance-none focus:border-emerald-400 transition-all pr-8"
                             >
                                 <option value="" disabled>Província</option>
                                 <option value="Niassa">Niassa</option>
@@ -290,12 +301,12 @@ const CompanyForm: React.FC<CompanyFormProps> = ({ initialData, onSubmit, onClos
                 <div className="space-y-3">
                     <div className="relative">
                         <i className="fa-solid fa-location-arrow absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-300 text-sm"></i>
-                        <input type="text" value={formData.geoLocation} onChange={e => setFormData({ ...formData, geoLocation: e.target.value })} className="w-full bg-white border border-slate-200 p-2.5 pl-11 rounded-lg text-[12px] focus:border-emerald-400 outline-none transition-all shadow-sm" placeholder="Endereço" />
+                        <input type="text" value={formData.geoLocation} onChange={e => setFormData({ ...formData, geoLocation: e.target.value })} className="w-full bg-white border border-slate-200 p-2.5 pl-11 rounded-[8px] text-[12px] focus:border-emerald-400 outline-none transition-all shadow-sm" placeholder="Endereço" />
                     </div>
 
                     <div className="relative">
                         <i className="fa-solid fa-envelope absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-300 text-sm"></i>
-                        <input required type="email" value={formData.email} onChange={e => setFormData({ ...formData, email: e.target.value })} className="w-full bg-white border border-slate-200 p-2.5 pl-11 rounded-lg text-[12px] focus:border-emerald-400 outline-none transition-all shadow-sm" placeholder="E-mail" />
+                        <input required type="email" value={formData.email} onChange={e => setFormData({ ...formData, email: e.target.value })} className="w-full bg-white border border-slate-200 p-2.5 pl-11 rounded-[8px] text-[12px] focus:border-emerald-400 outline-none transition-all shadow-sm" placeholder="E-mail" />
                     </div>
 
                     <div className="relative">
@@ -305,20 +316,20 @@ const CompanyForm: React.FC<CompanyFormProps> = ({ initialData, onSubmit, onClos
                             type="text"
                             value={formData.activity}
                             onChange={e => setFormData({ ...formData, activity: e.target.value })}
-                            className="w-full bg-white border border-slate-200 p-2.5 pl-11 rounded-lg text-[12px] text-emerald-700 focus:border-emerald-400 outline-none transition-all shadow-sm"
+                            className="w-full bg-white border border-slate-200 p-2.5 pl-11 rounded-[8px] text-[12px] text-emerald-700 focus:border-emerald-400 outline-none transition-all shadow-sm"
                             placeholder={isEnterprise ? "Actividade Principal (Ex: Revenda de Sementes)" : "Especialidade Principal (Ex: Agrónomo)"}
                         />
                     </div>
 
                     <div className="relative">
-                        <textarea rows={3} value={formData.fullDescription} onChange={e => setFormData({ ...formData, fullDescription: e.target.value })} className="w-full bg-white border border-slate-200 p-3 pt-3 rounded-lg text-[12px] focus:border-emerald-400 outline-none transition-all" placeholder={isEnterprise ? "Descrição da empresa..." : "Sobre o profissional..."} />
+                        <textarea rows={3} value={formData.fullDescription} onChange={e => setFormData({ ...formData, fullDescription: e.target.value })} className="w-full bg-white border border-slate-200 p-3 pt-3 rounded-[8px] text-[12px] focus:border-emerald-400 outline-none transition-all" placeholder={isEnterprise ? "Descrição da empresa..." : "Sobre o profissional..."} />
                     </div>
                 </div>
 
                 {/* Services Section */}
                 <div className="space-y-3 pt-3">
                     <div className="flex items-center gap-2 px-1">
-                        <div className="w-8 h-8 bg-emerald-50 text-emerald-600 rounded-lg flex items-center justify-center">
+                        <div className="w-8 h-8 bg-emerald-50 text-emerald-600 rounded-[8px] flex items-center justify-center">
                             <i className="fa-solid fa-handshake-angle text-xs"></i>
                         </div>
                         <p className="text-[10px] font-black text-[#1e293b] uppercase tracking-widest">
@@ -330,7 +341,7 @@ const CompanyForm: React.FC<CompanyFormProps> = ({ initialData, onSubmit, onClos
                             rows={4}
                             value={formData.services}
                             onChange={e => setFormData({ ...formData, services: e.target.value })}
-                            className="w-full bg-slate-50 border border-slate-200 p-4 rounded-2xl text-[12px] focus:border-emerald-400 focus:bg-white outline-none transition-all shadow-inner"
+                            className="w-full bg-slate-50 border border-slate-200 p-4 rounded-[8px] text-[12px] focus:border-emerald-400 focus:bg-white outline-none transition-all shadow-inner"
                             placeholder="Descreva detalhadamente o que oferece (ex: Consultoria, Venda, Aluguer...)"
                         />
                     </div>
@@ -340,7 +351,7 @@ const CompanyForm: React.FC<CompanyFormProps> = ({ initialData, onSubmit, onClos
                 <div className="space-y-4 pt-4 border-t border-slate-100">
                     <div className="flex justify-between items-center px-1">
                         <div className="flex items-center gap-2">
-                            <div className="w-8 h-8 bg-orange-50 text-orange-500 rounded-lg flex items-center justify-center">
+                            <div className="w-8 h-8 bg-orange-50 text-orange-500 rounded-[8px] flex items-center justify-center">
                                 <i className="fa-solid fa-boxes-stacked text-xs"></i>
                             </div>
                             <p className="text-[10px] font-black text-[#1e293b] uppercase tracking-widest">
@@ -354,7 +365,7 @@ const CompanyForm: React.FC<CompanyFormProps> = ({ initialData, onSubmit, onClos
                         )}
                     </div>
                     {formData.products.map((prod, idx) => (
-                        <div key={idx} className="bg-white border border-slate-200 rounded-lg p-3 space-y-3 animate-in fade-in duration-200">
+                        <div key={idx} className="bg-white border border-slate-200 rounded-[8px] p-3 space-y-3 animate-in fade-in duration-200">
                             {/* Product Header with Remove Button */}
                             <div className="flex justify-between items-center">
                                 <span className="text-[10px] font-black text-slate-400 uppercase">Produto #{idx + 1}</span>
@@ -369,7 +380,7 @@ const CompanyForm: React.FC<CompanyFormProps> = ({ initialData, onSubmit, onClos
 
                             {/* Product Photo */}
                             <div className="relative">
-                                <label className="flex flex-col items-center justify-center w-full h-32 bg-slate-50 border border-dashed border-slate-200 rounded-lg cursor-pointer hover:border-orange-400 hover:bg-orange-50 transition-all overflow-hidden">
+                                <label className="flex flex-col items-center justify-center w-full h-32 bg-slate-50 border border-dashed border-slate-200 rounded-[8px] cursor-pointer hover:border-orange-400 hover:bg-orange-50 transition-all overflow-hidden">
                                     {prod.photo ? (
                                         <img src={prod.photo} className="w-full h-full object-cover" alt="Produto" />
                                     ) : (
@@ -382,14 +393,24 @@ const CompanyForm: React.FC<CompanyFormProps> = ({ initialData, onSubmit, onClos
                                         type="file"
                                         accept="image/*"
                                         className="hidden"
-                                        onChange={(e) => {
+                                        onChange={async (e) => {
                                             const file = e.target.files?.[0];
                                             if (file) {
-                                                const reader = new FileReader();
-                                                reader.onloadend = () => {
-                                                    updateProduct(idx, 'photo', reader.result as string);
-                                                };
-                                                reader.readAsDataURL(file);
+                                                try {
+                                                    const compressedBlob = await compressImage(file);
+                                                    const reader = new FileReader();
+                                                    reader.onloadend = () => {
+                                                        updateProduct(idx, 'photo', reader.result as string);
+                                                    };
+                                                    reader.readAsDataURL(compressedBlob);
+                                                } catch (err) {
+                                                    console.error("Erro ao processar imagem do produto:", err);
+                                                    const reader = new FileReader();
+                                                    reader.onloadend = () => {
+                                                        updateProduct(idx, 'photo', reader.result as string);
+                                                    };
+                                                    reader.readAsDataURL(file);
+                                                }
                                             }
                                         }}
                                     />
@@ -413,14 +434,14 @@ const CompanyForm: React.FC<CompanyFormProps> = ({ initialData, onSubmit, onClos
                                     placeholder="Nome do Produto"
                                     value={prod.name}
                                     onChange={e => updateProduct(idx, 'name', e.target.value)}
-                                    className="bg-white border border-slate-200 p-2.5 rounded-lg text-[11px] focus:border-emerald-400 outline-none"
+                                    className="bg-white border border-slate-200 p-2.5 rounded-[8px] text-[11px] focus:border-emerald-400 outline-none"
                                 />
                                 <input
                                     type="text"
                                     placeholder="Preço (MT)"
                                     value={prod.price}
                                     onChange={e => updateProduct(idx, 'price', e.target.value)}
-                                    className="bg-white border border-slate-200 p-2.5 rounded-lg text-[11px] text-emerald-600 font-bold focus:border-emerald-400 outline-none"
+                                    className="bg-white border border-slate-200 p-2.5 rounded-[8px] text-[11px] text-emerald-600 font-bold focus:border-emerald-400 outline-none"
                                 />
                             </div>
 
@@ -429,7 +450,7 @@ const CompanyForm: React.FC<CompanyFormProps> = ({ initialData, onSubmit, onClos
                                 placeholder="Descrição do produto..."
                                 value={prod.description}
                                 onChange={e => updateProduct(idx, 'description', e.target.value)}
-                                className="w-full bg-white border border-slate-200 p-2.5 rounded-lg text-[11px] focus:border-emerald-400 outline-none resize-none"
+                                className="w-full bg-white border border-slate-200 p-2.5 rounded-[8px] text-[11px] focus:border-emerald-400 outline-none resize-none"
                                 rows={2}
                             />
 
@@ -450,7 +471,7 @@ const CompanyForm: React.FC<CompanyFormProps> = ({ initialData, onSubmit, onClos
                         </div>
                     ))}
                     {formData.plan === 'Free' ? (
-                        <div className="bg-slate-50 border border-slate-100 rounded-lg p-3 text-center">
+                        <div className="bg-slate-50 border border-slate-100 rounded-[8px] p-3 text-center">
                             <p className="text-[10px] text-slate-400 italic">O plano gratuito não permite registar produtos.</p>
                         </div>
                     ) : (
@@ -458,7 +479,7 @@ const CompanyForm: React.FC<CompanyFormProps> = ({ initialData, onSubmit, onClos
                             type="button"
                             onClick={handleAddProductField}
                             disabled={!hasPaidPlan && (initialData?.plan === 'Free' || !initialData)}
-                            className={`w-full py-3 border border-dashed rounded-lg text-[11px] font-black uppercase transition-all ${!hasPaidPlan && (initialData?.plan === 'Free' || !initialData)
+                            className={`w-full py-3 border border-dashed rounded-[8px] text-[11px] font-black uppercase transition-all ${!hasPaidPlan && (initialData?.plan === 'Free' || !initialData)
                                 ? 'border-slate-200 text-slate-300 cursor-not-allowed'
                                 : 'border-slate-300 text-slate-400 hover:border-orange-400 hover:text-orange-500'
                                 }`}
@@ -477,7 +498,7 @@ const CompanyForm: React.FC<CompanyFormProps> = ({ initialData, onSubmit, onClos
                                 key={period}
                                 type="button"
                                 onClick={() => { setFormData({ ...formData, billingPeriod: period }); setHasPaidPlan(false); }}
-                                className={`p-2.5 rounded-lg border text-[11px] font-bold transition-all ${formData.billingPeriod === period ? 'bg-[#1e293b] border-slate-800 text-white shadow-md' : 'bg-white border-slate-200 text-slate-500'}`}
+                                className={`p-2.5 rounded-[8px] border text-[11px] font-bold transition-all ${formData.billingPeriod === period ? 'bg-[#1e293b] border-slate-800 text-white shadow-md' : 'bg-white border-slate-200 text-slate-500'}`}
                             >
                                 {period === 'monthly' ? 'MENSAL' : 'ANUAL (-17%)'}
                             </button>
@@ -506,7 +527,7 @@ const CompanyForm: React.FC<CompanyFormProps> = ({ initialData, onSubmit, onClos
                                     // Only Parceiro has featured included/authorized automatically
                                     if (p === 'Parceiro') setHasPaidFeatured(true);
                                 }}
-                                className={`p-2.5 rounded-lg border text-[12px] uppercase flex flex-col items-center gap-0.5 transition-all ${formData.plan === p ? 'bg-orange-500 border-orange-400 text-white shadow-md' : 'bg-white border-slate-200 text-slate-500'}`}
+                                className={`p-2.5 rounded-[8px] border text-[12px] uppercase flex flex-col items-center gap-0.5 transition-all ${formData.plan === p ? 'bg-orange-500 border-orange-400 text-white shadow-md' : 'bg-white border-slate-200 text-slate-500'}`}
                             >
                                 <span className="font-bold">{p}</span>
                                 <span className="opacity-70 text-[11px] font-normal">
@@ -522,7 +543,7 @@ const CompanyForm: React.FC<CompanyFormProps> = ({ initialData, onSubmit, onClos
 
                 {/* Featured (Destaque) Section */}
                 <div className="px-1">
-                    <div className="p-4 bg-orange-50 border border-orange-100 rounded-lg relative overflow-hidden group">
+                    <div className="p-4 bg-orange-50 border border-orange-100 rounded-[8px] relative overflow-hidden group">
                         <i className="fa-solid fa-star absolute -right-2 -top-2 text-orange-200/50 text-5xl rotate-12 transition-transform group-hover:scale-110"></i>
                         <div className="relative flex justify-between items-start">
                             <div className="space-y-1">
@@ -563,7 +584,7 @@ const CompanyForm: React.FC<CompanyFormProps> = ({ initialData, onSubmit, onClos
                 <div className="pt-4 border-t border-slate-100 space-y-4">
                     {/* Subscription Summary / Calculator */}
                     {formData.plan !== 'Free' && (
-                        <div className="bg-slate-50 border border-slate-200 rounded-lg overflow-hidden shadow-sm">
+                        <div className="bg-slate-50 border border-slate-200 rounded-[8px] overflow-hidden shadow-sm">
                             <div className="bg-[#1e293b] p-3">
                                 <h3 className="text-white text-[10px] font-black uppercase tracking-widest text-center">Resumo da Facturação</h3>
                             </div>
@@ -600,7 +621,7 @@ const CompanyForm: React.FC<CompanyFormProps> = ({ initialData, onSubmit, onClos
                                         key={m}
                                         type="button"
                                         onClick={() => setPaymentMethod(m)}
-                                        className={`flex-1 py-2 rounded-lg border text-[9px] font-black uppercase transition-all ${paymentMethod === m ? 'bg-emerald-500 border-emerald-400 text-white shadow-lg' : 'bg-white border-slate-200 text-slate-400'}`}
+                                        className={`flex-1 py-2 rounded-[8px] border text-[9px] font-black uppercase transition-all ${paymentMethod === m ? 'bg-emerald-500 border-emerald-400 text-white shadow-lg' : 'bg-white border-slate-200 text-slate-400'}`}
                                     >
                                         {m}
                                     </button>
@@ -617,7 +638,7 @@ const CompanyForm: React.FC<CompanyFormProps> = ({ initialData, onSubmit, onClos
                                             type="tel"
                                             value={paymentPhone}
                                             onChange={e => setPaymentPhone(e.target.value)}
-                                            className="w-full bg-white border border-slate-200 p-3 pl-11 rounded-lg text-xs focus:border-emerald-400 outline-none transition-all shadow-sm"
+                                            className="w-full bg-white border border-slate-200 p-3 pl-11 rounded-[8px] text-xs focus:border-emerald-400 outline-none transition-all shadow-sm"
                                             placeholder={paymentMethod === 'mpesa' ? "Ex: 84 / 85..." : "Ex: 86 / 87..."}
                                         />
                                     </div>
@@ -644,7 +665,7 @@ const CompanyForm: React.FC<CompanyFormProps> = ({ initialData, onSubmit, onClos
                                             }, 1500);
                                         }}
                                         disabled={isPaymentProcessing}
-                                        className="w-full py-4 bg-[#10b981] text-white rounded-lg font-black text-[11px] uppercase shadow-xl shadow-emerald-100 flex items-center justify-center gap-2 transition-all active:scale-95 disabled:opacity-50"
+                                        className="w-full py-4 bg-[#10b981] text-white rounded-[8px] font-black text-[11px] uppercase shadow-xl shadow-emerald-100 flex items-center justify-center gap-2 transition-all active:scale-95 disabled:opacity-50"
                                     >
                                         {isPaymentProcessing ? (
                                             <i className="fa-solid fa-circle-notch fa-spin"></i>
@@ -667,7 +688,7 @@ const CompanyForm: React.FC<CompanyFormProps> = ({ initialData, onSubmit, onClos
                                                 placeholder="Titular da Conta"
                                                 value={bankDetails.holder}
                                                 onChange={e => setBankDetails({ ...bankDetails, holder: e.target.value })}
-                                                className="w-full bg-white border border-slate-200 p-2.5 pl-11 rounded-lg text-xs focus:border-emerald-400 outline-none transition-all shadow-sm"
+                                                className="w-full bg-white border border-slate-200 p-2.5 pl-11 rounded-[8px] text-xs focus:border-emerald-400 outline-none transition-all shadow-sm"
                                             />
                                         </div>
                                         <div className="relative">
@@ -677,7 +698,7 @@ const CompanyForm: React.FC<CompanyFormProps> = ({ initialData, onSubmit, onClos
                                                 placeholder="Nome do Banco"
                                                 value={bankDetails.bankName}
                                                 onChange={e => setBankDetails({ ...bankDetails, bankName: e.target.value })}
-                                                className="w-full bg-white border border-slate-200 p-2.5 pl-11 rounded-lg text-xs focus:border-emerald-400 outline-none transition-all shadow-sm"
+                                                className="w-full bg-white border border-slate-200 p-2.5 pl-11 rounded-[8px] text-xs focus:border-emerald-400 outline-none transition-all shadow-sm"
                                             />
                                         </div>
                                         <div className="relative">
@@ -686,7 +707,7 @@ const CompanyForm: React.FC<CompanyFormProps> = ({ initialData, onSubmit, onClos
                                                 placeholder="NIB"
                                                 value={bankDetails.nib}
                                                 onChange={e => setBankDetails({ ...bankDetails, nib: e.target.value })}
-                                                className="w-full bg-white border border-slate-200 p-2.5 rounded-lg text-xs focus:border-emerald-400 outline-none transition-all shadow-sm"
+                                                className="w-full bg-white border border-slate-200 p-2.5 rounded-[8px] text-xs focus:border-emerald-400 outline-none transition-all shadow-sm"
                                             />
                                         </div>
                                         <div className="grid grid-cols-2 gap-2">
@@ -695,14 +716,14 @@ const CompanyForm: React.FC<CompanyFormProps> = ({ initialData, onSubmit, onClos
                                                 placeholder="Agência"
                                                 value={bankDetails.agency}
                                                 onChange={e => setBankDetails({ ...bankDetails, agency: e.target.value })}
-                                                className="w-full bg-white border border-slate-200 p-2.5 rounded-lg text-xs focus:border-emerald-400 outline-none transition-all shadow-sm"
+                                                className="w-full bg-white border border-slate-200 p-2.5 rounded-[8px] text-xs focus:border-emerald-400 outline-none transition-all shadow-sm"
                                             />
                                             <input
                                                 type="text"
                                                 placeholder="IBAN"
                                                 value={bankDetails.iban}
                                                 onChange={e => setBankDetails({ ...bankDetails, iban: e.target.value })}
-                                                className="w-full bg-white border border-slate-200 p-2.5 rounded-lg text-xs focus:border-emerald-400 outline-none transition-all shadow-sm"
+                                                className="w-full bg-white border border-slate-200 p-2.5 rounded-[8px] text-xs focus:border-emerald-400 outline-none transition-all shadow-sm"
                                             />
                                         </div>
                                     </div>
@@ -729,7 +750,7 @@ const CompanyForm: React.FC<CompanyFormProps> = ({ initialData, onSubmit, onClos
                                             }, 1500);
                                         }}
                                         disabled={isPaymentProcessing}
-                                        className="w-full py-4 bg-emerald-600 text-white rounded-lg font-black text-[11px] uppercase shadow-xl shadow-emerald-100 flex items-center justify-center gap-2 transition-all active:scale-95 disabled:opacity-50"
+                                        className="w-full py-4 bg-emerald-600 text-white rounded-[8px] font-black text-[11px] uppercase shadow-xl shadow-emerald-100 flex items-center justify-center gap-2 transition-all active:scale-95 disabled:opacity-50"
                                     >
                                         {isPaymentProcessing ? (
                                             <i className="fa-solid fa-circle-notch fa-spin"></i>
@@ -746,7 +767,7 @@ const CompanyForm: React.FC<CompanyFormProps> = ({ initialData, onSubmit, onClos
                     {((formData.plan === 'Free') || (hasPaidPlan && (!formData.isFeatured || hasPaidFeatured))) && (
                         <button
                             type="submit"
-                            className="w-full bg-[#1e293b] hover:bg-orange-500 text-white py-4 rounded-lg font-black text-xs uppercase tracking-widest shadow-xl transition-all active:scale-95"
+                            className="w-full bg-[#1e293b] hover:bg-orange-500 text-white py-4 rounded-[8px] font-black text-xs uppercase tracking-widest shadow-xl transition-all active:scale-95"
                         >
                             {formData.plan === 'Free' ? 'Publicar Registo Gratuito' : 'Finalizar e Publicar'}
                         </button>

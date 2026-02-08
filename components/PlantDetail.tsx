@@ -1,6 +1,7 @@
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { PlantInfo, Recipe } from '../types';
+import { databaseService } from '../services/databaseService';
 
 interface PlantDetailProps {
   plant: PlantInfo;
@@ -10,6 +11,12 @@ interface PlantDetailProps {
 }
 
 const PlantDetail: React.FC<PlantDetailProps> = ({ plant, onClose, onUpdateCustomName, onAddRecipe }) => {
+  useEffect(() => {
+    if (plant.id) {
+      databaseService.logPageView('plant', plant.id).catch(console.error);
+    }
+  }, [plant.id]);
+
   const [isEditing, setIsEditing] = useState(false);
   const [isAddingRecipe, setIsAddingRecipe] = useState(false);
   const [tempName, setTempName] = useState(plant.customName || '');
@@ -49,7 +56,7 @@ const PlantDetail: React.FC<PlantDetailProps> = ({ plant, onClose, onUpdateCusto
 
       <div className="p-6 space-y-8 pb-32">
         {plant.diagnosis?.hasDisease && (
-          <section className="bg-red-50 border border-red-100 rounded-3xl p-6 shadow-sm">
+          <section className="bg-red-50 border border-red-100 rounded-[8px] p-6 shadow-sm">
             <h2 className="text-red-700 font-bold flex items-center gap-2 mb-3">
               <i className="fa-solid fa-triangle-exclamation"></i> Diagnóstico de Doença
             </h2>
@@ -62,7 +69,7 @@ const PlantDetail: React.FC<PlantDetailProps> = ({ plant, onClose, onUpdateCusto
                 <p className="text-xs font-bold text-red-400 uppercase">Sintomas</p>
                 <p className="text-slate-600 text-sm">{plant.diagnosis.symptoms}</p>
               </div>
-              <div className="bg-white p-4 rounded-2xl border border-red-50">
+              <div className="bg-white p-4 rounded-[8px] border border-red-50">
                 <p className="text-xs font-bold text-emerald-600 uppercase mb-1">Cura ou Pesticida</p>
                 <p className="text-slate-800 font-bold mb-2">{plant.diagnosis.pesticideOrCure}</p>
                 <div className="pt-2 border-t border-slate-100 flex justify-between items-center">
@@ -81,9 +88,9 @@ const PlantDetail: React.FC<PlantDetailProps> = ({ plant, onClose, onUpdateCusto
         )}
 
         {isEditing && (
-          <div className="bg-emerald-50 p-4 rounded-2xl border border-emerald-100 flex gap-2 animate-in zoom-in">
-            <input type="text" value={tempName} onChange={e => setTempName(e.target.value)} className="flex-1 bg-white border border-emerald-200 rounded-lg px-4 py-2 focus:border-orange-400 outline-none transition-colors" placeholder="Nome personalizado..." />
-            <button onClick={handleSaveName} className="bg-emerald-600 hover:bg-orange-500 text-white px-4 py-2 rounded-lg font-semibold transition-all">Salvar</button>
+          <div className="bg-emerald-50 p-4 rounded-[8px] border border-emerald-100 flex gap-2 animate-in zoom-in">
+            <input type="text" value={tempName} onChange={e => setTempName(e.target.value)} className="flex-1 bg-white border border-emerald-200 rounded-[8px] px-4 py-2 focus:border-orange-400 outline-none transition-colors" placeholder="Nome personalizado..." />
+            <button onClick={handleSaveName} className="bg-emerald-600 hover:bg-orange-500 text-white px-4 py-2 rounded-[8px] font-semibold transition-all">Salvar</button>
           </div>
         )}
 
@@ -102,14 +109,14 @@ const PlantDetail: React.FC<PlantDetailProps> = ({ plant, onClose, onUpdateCusto
         <section>
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-xl font-bold text-slate-800">Minhas Receitas</h2>
-            <button onClick={() => setIsAddingRecipe(true)} className="bg-emerald-50 hover:bg-orange-50 text-emerald-600 hover:text-orange-500 p-2 rounded-xl border border-emerald-100 hover:border-orange-200 transition-all">
+            <button onClick={() => setIsAddingRecipe(true)} className="bg-emerald-50 hover:bg-orange-50 text-emerald-600 hover:text-orange-500 p-2 rounded-[8px] border border-emerald-100 hover:border-orange-200 transition-all">
               <i className="fa-solid fa-plus"></i>
             </button>
           </div>
 
           <div className="space-y-4">
             {plant.recipes.map((recipe, i) => (
-              <div key={i} className="bg-white border border-slate-100 rounded-2xl p-5 shadow-sm hover:border-orange-100 transition-colors">
+              <div key={i} className="bg-white border border-slate-100 p-6 rounded-[8px] shadow-sm space-y-4 hover:border-orange-100 transition-colors">
                 <div className="flex justify-between mb-2">
                   <h3 className="font-bold text-slate-800">{recipe.title}</h3>
                   <span className="text-[10px] font-bold text-emerald-600 hover:text-orange-500 cursor-default uppercase tracking-widest">{recipe.type}</span>

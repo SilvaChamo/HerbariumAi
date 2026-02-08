@@ -8,6 +8,10 @@ interface HeaderProps {
     onLogoClick: () => void;
     onDashboardToggle: () => void;
     onLogout: () => void;
+    onNavigate: (tab: any) => void;
+    onSearch: (query: string) => void;
+    installPrompt: any;
+    onInstall: () => void;
 }
 
 const Header: React.FC<HeaderProps> = ({
@@ -16,52 +20,78 @@ const Header: React.FC<HeaderProps> = ({
     showDashboard,
     onLogoClick,
     onDashboardToggle,
-    onLogout
+    onLogout,
+    onNavigate,
+    onSearch,
+    installPrompt,
+    onInstall
 }) => {
     const [isMenuOpen, setIsMenuOpen] = React.useState(false);
 
-    const categories = [
-        { label: 'Fornecedores', icon: 'fa-handshake' },
-        { label: 'Produtores', icon: 'fa-seedling' },
-        { label: 'Consumidores', icon: 'fa-user-tag' },
-        { label: 'Profissionais', icon: 'fa-user-tie' },
-        { label: 'Lojas de Insumos', icon: 'fa-shop' }
+    const menuSections = [
+        {
+            title: 'Funcionalidades',
+            items: [
+                { label: 'Scanner de Diagnóstico', icon: 'fa-qrcode', tab: 'scan', color: 'text-emerald-500' },
+                { label: 'Mercado Agrário', icon: 'fa-store', tab: 'discover', color: 'text-orange-500' },
+                { label: 'Rede de Profissionais', icon: 'fa-user-tie', tab: 'discover', params: 'Profissionais', color: 'text-blue-500' },
+                { label: 'Minha Colecção', icon: 'fa-leaf', tab: 'collection', color: 'text-green-600' }
+            ]
+        },
+        {
+            title: 'Minha Conta',
+            items: [
+                { label: 'Meu Perfil', icon: 'fa-user', tab: 'account' },
+                { label: 'Dashboard de Negócios', icon: 'fa-chart-line', tab: 'account', show: !!myCompany },
+                { label: 'Sair da Conta', icon: 'fa-right-from-bracket', action: onLogout, show: !!user, color: 'text-red-400' }
+            ]
+        },
+        {
+            title: 'Suporte & Info',
+            items: [
+                { label: 'Instalar Aplicativo', icon: 'fa-download', action: onInstall, show: true, color: installPrompt ? 'text-emerald-600 animate-pulse' : 'text-slate-400' },
+                { label: 'Aceder ao Site Principal', icon: 'fa-globe', action: () => window.open('https://agrodata.co.mz', '_blank'), color: 'text-emerald-600' },
+                { label: 'Centro de Ajuda', icon: 'fa-circle-question', tab: 'account' }, // Usually leads to support form in account
+                { label: 'Sobre a Botânica', icon: 'fa-circle-info' },
+                { label: 'Termos & Privacidade', icon: 'fa-shield-halved' }
+            ]
+        }
     ];
 
     return (
         <>
             <header className="px-6 py-5 bg-white border-b border-slate-100 flex justify-between items-center z-[60] relative">
-                <div onClick={onLogoClick}>
-                    <h1 className="text-xl font-bold text-[#1e293b] tracking-tight cursor-pointer">
-                        Botánica<span className="text-[#10b981]">AI</span>
-                    </h1>
-                    <p className="text-slate-400 text-[10px] font-bold uppercase tracking-[0.2em]">
-                        {user ? `Olá, ${user.name}` : 'BEM-VINDO(A)'}
-                    </p>
+                <div onClick={onLogoClick} className="flex items-center gap-0 cursor-pointer">
+                    <img src="/icon.png" alt="Botânica" className="w-12 h-12 rounded-lg" />
+                    <div className="flex flex-col items-start leading-none">
+                        <p className="text-slate-400 text-[9px] font-black uppercase tracking-[0.2em]">
+                            {user ? 'Olá' : 'BEM-VINDO(A)'}
+                        </p>
+                        <h1 className="text-xl font-black text-emerald-700 tracking-tight flex items-center">
+                            <span className="text-emerald-600">B</span>
+                            <span className="text-emerald-700">ot</span>
+                            <span className="text-orange-500">â</span>
+                            <span className="text-emerald-700">nic</span>
+                            <span className="text-emerald-700">a</span>
+                        </h1>
+                    </div>
                 </div>
                 <div className="flex gap-2 items-center">
-                    {myCompany && (
-                        <button
-                            onClick={onDashboardToggle}
-                            className={`h-9 w-9 rounded-xl flex items-center justify-center transition-all ${showDashboard
-                                ? 'bg-emerald-500 text-white shadow-emerald-200 shadow-lg'
-                                : 'bg-slate-50 text-emerald-500 border border-slate-200'
-                                }`}
-                        >
-                            <i className="fa-solid fa-chart-line text-sm"></i>
-                        </button>
-                    )}
                     {user && (
-                        <button
-                            onClick={onLogout}
-                            className="h-9 w-9 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-center text-slate-300 hover:text-orange-500 transition-all"
-                        >
-                            <i className="fa-solid fa-right-from-bracket"></i>
-                        </button>
+                        <div className="relative">
+                            <button
+                                onClick={() => onNavigate('account')}
+                                className="h-9 w-9 bg-emerald-500 rounded-full flex items-center justify-center text-white font-black text-sm shadow-sm hover:bg-emerald-600 transition-all"
+                                title={`${user.name} - Clique para ver dados da conta`}
+                            >
+                                {user.name.charAt(0).toUpperCase()}
+                            </button>
+                            <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-emerald-400 rounded-full border-2 border-white"></div>
+                        </div>
                     )}
                     <button
                         onClick={() => setIsMenuOpen(true)}
-                        className="h-9 w-9 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-center hover:bg-orange-50 text-orange-600 transition-all"
+                        className="h-9 w-9 bg-slate-50 border border-slate-200 rounded-[10px] flex items-center justify-center hover:bg-orange-50 text-orange-600 transition-all"
                     >
                         <i className="fa-solid fa-bars-staggered text-sm"></i>
                     </button>
@@ -71,65 +101,83 @@ const Header: React.FC<HeaderProps> = ({
             {/* Off-canvas Menu */}
             {isMenuOpen && (
                 <div className="absolute inset-0 z-[100] animate-in fade-in duration-300">
-                    {/* Overlay */}
                     <div
                         className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm"
                         onClick={() => setIsMenuOpen(false)}
                     />
 
-                    {/* Sidebar */}
-                    <div className="absolute right-0 top-0 h-full w-[80%] max-w-[320px] bg-white shadow-2xl animate-in slide-in-from-right duration-500 flex flex-col">
-                        <div className="p-4 border-b border-slate-100 flex justify-between items-center">
-                            <span className="text-xs font-black text-slate-400 uppercase tracking-widest">Navegação</span>
+                    <div className="absolute right-0 top-0 h-full w-[85%] max-w-[320px] bg-white shadow-2xl animate-in slide-in-from-right duration-500 flex flex-col">
+                        <div className="p-6 border-b border-slate-50 flex justify-between items-center bg-white sticky top-0 z-10">
+                            <div>
+                                <span className="text-[10px] font-black text-slate-300 uppercase tracking-[0.2em] block mb-1">Navegação</span>
+                                <h3 className="text-lg font-black text-slate-800 tracking-tight">Menu Principal</h3>
+                            </div>
                             <button
                                 onClick={() => setIsMenuOpen(false)}
-                                className="w-8 h-8 rounded-full bg-slate-50 flex items-center justify-center text-slate-400 hover:text-red-500 transition-all"
+                                className="w-10 h-10 rounded-[10px] bg-slate-50 flex items-center justify-center text-slate-400 hover:text-red-500 transition-all active:scale-90"
                             >
                                 <i className="fa-solid fa-xmark"></i>
                             </button>
                         </div>
 
-                        <div className="flex-1 overflow-y-auto p-2 space-y-2">
-                            {/* Call to action for registration */}
-                            <div className="px-2 mb-4">
-                                <button
-                                    onClick={() => {
-                                        setIsMenuOpen(false);
-                                        onLogoClick(); // Back to main
-                                        // We need a way to trigger form from here, 
-                                        // but since Header doesn't have setShowCompanyForm,
-                                        // we'll rely on the user navigating or we'll pass a prop.
-                                        // For now, let's keep it simple: navigate to Discover and show form.
-                                        window.dispatchEvent(new CustomEvent('open-company-form'));
-                                    }}
-                                    className="w-full bg-emerald-500 text-white p-4 rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-lg shadow-emerald-100 flex items-center justify-center gap-3 active:scale-95 transition-all"
-                                >
-                                    <i className="fa-solid fa-building-circle-plus text-sm"></i>
-                                    Cadastrar Minha Empresa
-                                </button>
-                            </div>
+                        <div className="flex-1 overflow-y-auto p-4 space-y-8 mt-2">
+                            {/* Premium CTA for Guest or Business */}
+                            {!myCompany && (
+                                <div className="px-2">
+                                    <button
+                                        onClick={() => {
+                                            setIsMenuOpen(false);
+                                            window.dispatchEvent(new CustomEvent('open-company-form'));
+                                        }}
+                                        className="w-full bg-emerald-500 text-white p-4 rounded-[10px] font-black text-[10px] uppercase tracking-[0.2em] shadow-lg shadow-emerald-100 flex items-center justify-center gap-3 active:scale-95 transition-all group"
+                                    >
+                                        <div className="w-8 h-8 bg-white/20 rounded-[10px] flex items-center justify-center">
+                                            <i className="fa-solid fa-building-circle-plus text-sm"></i>
+                                        </div>
+                                        <span>Anunciar Negócio</span>
+                                    </button>
+                                </div>
+                            )}
 
-                            <span className="text-[9px] font-black text-slate-300 uppercase tracking-[0.2em] px-4">Directório</span>
-                            {categories.map((cat, idx) => (
-                                <button
-                                    key={idx}
-                                    className="w-full flex items-center gap-3 p-2.5 px-4 rounded-xl hover:bg-orange-50 transition-all group"
-                                    onClick={() => {
-                                        setIsMenuOpen(false);
-                                    }}
-                                >
-                                    <div className="w-9 h-9 bg-slate-50 text-slate-400 group-hover:bg-orange-500 group-hover:text-white rounded-lg flex items-center justify-center text-sm transition-all shadow-sm">
-                                        <i className={`fa-solid ${cat.icon}`}></i>
+                            {menuSections.map((section, sIdx) => (
+                                <div key={sIdx} className="space-y-3">
+                                    <h4 className="text-[9px] font-black text-slate-300 uppercase tracking-[0.2em] px-4">{section.title}</h4>
+                                    <div className="space-y-1">
+                                        {section.items.map((item: any, iIdx) => {
+                                            if (item.show === false) return null;
+                                            return (
+                                                <button
+                                                    key={iIdx}
+                                                    className="w-full flex items-center gap-4 p-3 px-4 rounded-[10px] hover:bg-slate-50 transition-all group active:scale-95 text-left"
+                                                    onClick={() => {
+                                                        setIsMenuOpen(false);
+                                                        if (item.action) {
+                                                            item.action();
+                                                        } else if (item.tab) {
+                                                            onNavigate(item.tab);
+                                                            if (item.params) {
+                                                                // If we had a direct category trigger, we'd use it here.
+                                                                // For now let's use the tab change.
+                                                            }
+                                                        }
+                                                    }}
+                                                >
+                                                    <div className={`w-10 h-10 bg-slate-50 ${item.color || 'text-slate-400'} group-hover:scale-110 rounded-[10px] flex items-center justify-center text-sm transition-all shadow-sm border border-slate-100`}>
+                                                        <i className={`fa-solid ${item.icon}`}></i>
+                                                    </div>
+                                                    <span className="font-bold text-slate-600 text-[13px] tracking-tight">{item.label}</span>
+                                                </button>
+                                            );
+                                        })}
                                     </div>
-                                    <span className="font-bold text-slate-700 group-hover:text-orange-600 text-[13px]">{cat.label}</span>
-                                </button>
+                                </div>
                             ))}
                         </div>
 
-                        <div className="p-4 border-t border-slate-50 bg-slate-50/50">
-                            <div className="flex items-center gap-3 p-4 bg-emerald-500 rounded-xl text-white shadow-lg">
-                                <i className="fa-solid fa-circle-info text-xs opacity-70"></i>
-                                <span className="text-[10px] font-bold leading-tight">Mais categorias serão adicionadas em breve.</span>
+                        <div className="p-6 border-t border-slate-50 bg-slate-50/30">
+                            <div className="flex items-center justify-between opacity-40 grayscale">
+                                <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Botânica App v2.0</span>
+                                <i className="fa-solid fa-seedling text-slate-400"></i>
                             </div>
                         </div>
                     </div>
@@ -139,4 +187,4 @@ const Header: React.FC<HeaderProps> = ({
     );
 };
 
-export default Header;
+export default React.memo(Header);

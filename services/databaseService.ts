@@ -236,5 +236,141 @@ export const databaseService = {
             .eq('id', plantId);
 
         if (error) throw error;
+    },
+
+    // Analytics & Leads
+    async logPageView(targetType: 'company' | 'plant' | 'product', targetId: string, userId?: string, viewerId?: string): Promise<void> {
+        const { error } = await supabase
+            .from('page_views')
+            .insert({
+                target_type: targetType,
+                target_id: targetId,
+                user_id: userId,
+                viewer_id: viewerId
+            });
+        if (error) console.error('Error logging page view:', error);
+    },
+
+    async submitLead(lead: {
+        user_id?: string;
+        sender_name: string;
+        sender_email: string;
+        sender_phone?: string;
+        subject?: string;
+        message: string;
+        source_type?: string;
+        source_id?: string;
+    }): Promise<void> {
+        const { error } = await supabase
+            .from('leads')
+            .insert(lead);
+        if (error) throw error;
+    },
+
+    async submitSupportTicket(ticket: {
+        user_id?: string;
+        user_email?: string;
+        subject: string;
+        message: string;
+        priority?: 'low' | 'normal' | 'high' | 'urgent';
+    }): Promise<void> {
+        const { error } = await supabase
+            .from('support_tickets')
+            .insert(ticket);
+        if (error) throw error;
+    },
+
+    async getCompanyStats(companyId: string) {
+        // Get total page views
+        const { count: viewsCount, error: viewsError } = await supabase
+            .from('page_views')
+            .select('*', { count: 'exact', head: true })
+            .eq('target_id', companyId);
+
+        if (viewsError) console.error('Error fetching views count:', viewsError);
+
+        // Get total leads
+        const { count: leadsCount, error: leadsError } = await supabase
+            .from('leads')
+            .select('*', { count: 'exact', head: true })
+            .eq('user_id', companyId); // Leads sent to this company
+
+        if (leadsError) console.error('Error fetching leads count:', leadsError);
+
+        return {
+            views: viewsCount || 0,
+            leads: leadsCount || 0
+        };
+    },
+
+    async getProfessionals() {
+        const { data, error } = await supabase
+            .from('professionals')
+            .select('*')
+            .order('created_at', { ascending: false });
+        if (error) throw error;
+        return data as any[];
+    },
+
+    async getProducts() {
+        const { data, error } = await supabase
+            .from('products')
+            .select('*')
+            .order('created_at', { ascending: false });
+        if (error) throw error;
+        return data as any[];
+    },
+
+    async getProductsByCompany(companyId: string) {
+        const { data, error } = await supabase
+            .from('products')
+            .select('*')
+            .eq('company_id', companyId)
+            .order('created_at', { ascending: false });
+        if (error) throw error;
+        return data as any[];
+    },
+
+    async getCompaniesByCategory(category: string) {
+        const { data, error } = await supabase
+            .from('companies')
+            .select('*')
+            .ilike('category', `%${category}%`)
+            .order('name', { ascending: true });
+        if (error) throw error;
+        return data.map(this.mapCompanyData);
+    },
+
+    async globalSearch(query: string) {
+        if (!query || query.length < 2) return [];
+
+        // Search Companies
+        const { data: companies } = await supabase
+            .from('companies')
+            .select('*')
+            .ilike('name', `%${query}%`)
+            .limit(10);
+
+        // Search Professionals
+        const { data: professionals } = await supabase
+            .from('professionals')
+            .select('*')
+            .or(`name.ilike.%${query}%,role.ilike.%${query}%`)
+            .limit(10);
+
+        // Search Products
+        const { data: products } = await supabase
+            .from('products')
+            .select('*')
+            .ilike('name', `%${query}%`)
+            .limit(10);
+
+        const results = [
+            ...(companies || []).map(c => ({ ...this.mapCompanyData(c), searchType: 'Empresa' })),
+            ...(professionals || []).map(p => ({ ...p, searchType: 'Profissional' })),
+            ...(products || []).map(pr => ({ ...pr, searchType: 'Produto' }))
+        ];
+
+        return results;
     }
 };

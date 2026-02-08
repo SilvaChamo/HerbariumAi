@@ -112,7 +112,7 @@ const InvoiceReceipt: React.FC<InvoiceReceiptProps> = ({ company, onClose }) => 
 
                     <div className="pt-6 text-center">
                         <p className="text-[9px] text-slate-400 font-bold uppercase leading-relaxed">
-                            Obrigado por escolher o Herbarium AI.<br />
+                            Obrigado por escolher o Botânica.<br />
                             Conserve este recibo para seus arquivos.
                         </p>
                     </div>

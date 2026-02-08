@@ -96,6 +96,32 @@ export interface CompanyDetail {
   productLimit?: number | null; // new field indicating max products for the plan
 }
 
+export interface Professional {
+  id: string;
+  name: string;
+  role: string;
+  image_url: string;
+  location: string;
+  email?: string;
+  phone?: string;
+  bio?: string;
+  specialties?: string;
+  category?: string;
+  rating?: number;
+  profession?: string;
+  whatsapp?: string;
+}
+
+export interface MarketProduct {
+  id: string;
+  name: string;
+  category: string;
+  image_url: string;
+  price: number;
+  description: string;
+  company_id: string;
+}
+
 export interface VideoAd {
   id?: string;
   companyName: string;

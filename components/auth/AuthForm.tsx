@@ -44,7 +44,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ onAuth, onNavigate, onAlert }) => {
                         onAuth({
                             id: data.user.id,
                             email: data.user.email || '',
-                            name: data.user.user_metadata.full_name || data.user.email?.split('@')[0] || ''
+                            name: data.user.user_metadata.full_name || 'Usuário'
                         });
                     } else {
                         onAlert?.('Sucesso', 'Registo realizado! Por favor, verifique o seu email para confirmar a conta.', 'success');
@@ -61,7 +61,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ onAuth, onNavigate, onAlert }) => {
                     onAuth({
                         id: data.user.id,
                         email: data.user.email || '',
-                        name: data.user.user_metadata.full_name || data.user.email?.split('@')[0] || ''
+                        name: data.user.user_metadata.full_name || 'Usuário'
                     });
                 }
             }
@@ -103,12 +103,12 @@ const AuthForm: React.FC<AuthFormProps> = ({ onAuth, onNavigate, onAlert }) => {
                 <span className="text-[10px] font-black uppercase tracking-widest text-center">Voltar ao Scanner</span>
             </button>
 
-            <div className="bg-slate-900/[0.05] p-6 rounded-[15px] border border-slate-900/[0.02] backdrop-blur-[2px]">
+            <div className="bg-slate-900/[0.05] p-6 rounded-[8px] border border-slate-900/[0.02] backdrop-blur-[2px]">
                 <h2 className="text-2xl font-black text-[#1e293b] mb-2 text-center">
                     {isRegistering ? 'Criar Nova Conta' : 'Acesse sua Conta'}
                 </h2>
                 <p className="text-xs text-slate-400 mb-8 font-medium text-center">
-                    {isRegistering ? 'Registe-se para aceder ao mercado completo.' : 'Bem-vindo de volta ao Herbarium AI.'}
+                    {isRegistering ? 'Registe-se para aceder ao mercado completo.' : 'Bem-vindo de volta ao Botânica.'}
                 </p>
 
                 <form onSubmit={handleAuth} className="space-y-3">
@@ -121,7 +121,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ onAuth, onNavigate, onAlert }) => {
                                 placeholder="Nome completo"
                                 value={fullName}
                                 onChange={e => setFullName(e.target.value)}
-                                className="w-full bg-white/90 border border-slate-200 p-3 pl-11 rounded-lg outline-none text-xs focus:border-emerald-400 transition-all shadow-sm"
+                                className="w-full bg-white border border-slate-200 rounded-[8px] px-4 py-3 text-xs font-semibold focus:border-emerald-500 transition-all outline-none"
                             />
                         </div>
                     )}
@@ -133,7 +133,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ onAuth, onNavigate, onAlert }) => {
                             placeholder="Seu email"
                             value={email}
                             onChange={e => setEmail(e.target.value)}
-                            className="w-full bg-white/90 border border-slate-200 p-3 pl-11 rounded-lg outline-none text-xs focus:border-emerald-400 transition-all shadow-sm"
+                            className="w-full bg-white/90 border border-slate-200 p-3 pl-11 rounded-[8px] outline-none text-xs focus:border-emerald-400 transition-all shadow-sm"
                         />
                     </div>
                     <div className="relative">
@@ -144,7 +144,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ onAuth, onNavigate, onAlert }) => {
                             placeholder="Sua senha"
                             value={password}
                             onChange={e => setPassword(e.target.value)}
-                            className="w-full bg-white border border-slate-200 p-3 pl-11 pr-11 rounded-lg outline-none text-xs focus:border-emerald-400 transition-all shadow-sm"
+                            className="w-full bg-white border border-slate-200 p-3 pl-11 pr-11 rounded-[8px] outline-none text-xs focus:border-emerald-400 transition-all shadow-sm"
                         />
                         <button
                             type="button"
@@ -169,7 +169,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ onAuth, onNavigate, onAlert }) => {
                     <button
                         type="submit"
                         disabled={loading}
-                        className="w-full bg-[#10b981] hover:bg-orange-500 text-white py-3.5 rounded-lg font-black text-xs uppercase tracking-widest shadow-lg shadow-emerald-100 transition-all active:scale-95 disabled:opacity-50 mt-2"
+                        className="w-full bg-[#059669] hover:bg-[#047857] text-white py-4 rounded-[8px] text-[11px] font-black uppercase tracking-widest shadow-lg shadow-emerald-100 transition-all active:scale-95 disabled:opacity-50 mt-2"
                     >
                         {loading ? 'A PROCESSAR...' : (isRegistering ? 'FINALIZAR REGISTO' : 'ENTRAR AGORA')}
                     </button>

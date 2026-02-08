@@ -1,6 +1,7 @@
 import React, { useRef, useState } from 'react';
 import { PlantInfo } from '../../types';
 import { identifyPlant } from '../../services/geminiService';
+import { formatCurrency, compressImage } from '../../utils';
 
 interface ScannerProps {
     onPlantIdentified: (plant: PlantInfo) => void;
@@ -33,10 +34,30 @@ const Scanner: React.FC<ScannerProps> = ({ onPlantIdentified, onLoadingChange })
         const ctx = canvas.getContext('2d');
         if (ctx) {
             ctx.drawImage(video, 0, 0);
-            const base64 = canvas.toDataURL('image/jpeg', 0.8).split(',')[1];
+
             setLoading(true);
             onLoadingChange(true);
+
             try {
+                // Convert canvas to blob first
+                const blob = await new Promise<Blob>((resolve) => {
+                    canvas.toBlob((b) => resolve(b!), 'image/jpeg', 0.8);
+                });
+
+                // Use compressImage to ensure it's WebP and under 100kb
+                const compressedWebpBlob = await compressImage(blob, { targetSizeKb: 100 });
+
+                // Convert compressed blob to base64 for Gemini
+                const reader = new FileReader();
+                const base64Promise = new Promise<string>((resolve) => {
+                    reader.onloadend = () => {
+                        const base64 = (reader.result as string).split(',')[1];
+                        resolve(base64);
+                    };
+                });
+                reader.readAsDataURL(compressedWebpBlob);
+                const base64 = await base64Promise;
+
                 const plantInfo = await identifyPlant(base64);
                 onPlantIdentified(plantInfo);
                 const stream = video.srcObject as MediaStream;
@@ -64,46 +85,48 @@ const Scanner: React.FC<ScannerProps> = ({ onPlantIdentified, onLoadingChange })
                             <i className="fa-solid fa-camera text-5xl text-[#10b981] group-hover:text-orange-500"></i>
                         </div>
                     </div>
-                    <div className="space-y-4">
-                        <h2 className="text-2xl font-extrabold text-[#1e293b]">Scanner Botânico</h2>
-                        <p className="text-slate-500 text-sm px-8 leading-relaxed font-medium">
+                    <div className="space-y-0">
+                        <h2 className="text-xl font-extrabold text-[#1e293b]">Scanner Botânico</h2>
+                        <p className="text-slate-500 text-xs px-6 leading-tight font-medium">
                             Capture imagens para identificar plantas e diagnosticar pragas em tempo real.
                         </p>
                     </div>
                     <button
                         onClick={startCamera}
-                        className="bg-[#10b981] hover:bg-orange-500 text-white px-14 py-4 rounded-full font-bold shadow-lg transition-all active:scale-95"
+                        className="mt-5 bg-[#10b981] hover:bg-orange-500 text-white px-14 py-3 rounded-full font-bold shadow-lg transition-all active:scale-95"
                     >
                         Capturar Agora
                     </button>
 
                     {/* Registration Shortcut on Home/Scanner */}
-                    <div className="pt-4 border-t border-slate-100 w-full">
-                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">É um profissional ou empresa?</p>
-                        <button
-                            onClick={() => window.dispatchEvent(new CustomEvent('open-company-form'))}
-                            className="text-emerald-600 font-black text-[11px] uppercase tracking-tighter hover:text-orange-500 flex items-center justify-center gap-2 mx-auto"
-                        >
-                            Cadastre seu negócio aqui
-                            <i className="fa-solid fa-arrow-right-long"></i>
-                        </button>
+                    <div className="bg-slate-50 border border-slate-100 rounded-[8px] p-2 text-center">
+                        <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest leading-tight">
+                            Toque no botão central para iniciar a câmara e identificar a planta
+                        </p>
                     </div>
+                    <button
+                        onClick={() => window.dispatchEvent(new CustomEvent('open-company-form'))}
+                        className="text-emerald-600 font-black text-[11px] uppercase tracking-tighter hover:text-orange-500 flex items-center justify-center gap-2 mx-auto"
+                    >
+                        Cadastre seu negócio aqui
+                        <i className="fa-solid fa-arrow-right-long"></i>
+                    </button>
                 </div>
             ) : (
                 <div className="w-full h-full flex flex-col p-4 space-y-4">
-                    <div className="relative rounded-xl overflow-hidden flex-1 bg-black shadow-inner border-4 border-white">
+                    <div className="relative rounded-[8px] overflow-hidden flex-1 bg-black shadow-inner border-4 border-white">
                         <video ref={videoRef} autoPlay playsInline className="absolute w-full h-full object-cover" />
                     </div>
                     <div className="flex gap-3">
                         <button
                             onClick={() => setScanning(false)}
-                            className="bg-white text-slate-400 h-16 w-16 rounded-xl border border-slate-200 shadow-sm"
+                            className="bg-white text-slate-400 h-16 w-16 rounded-[8px] border border-slate-200 shadow-sm"
                         >
                             <i className="fa-solid fa-xmark text-xl"></i>
                         </button>
                         <button
                             onClick={captureAndIdentify}
-                            className="flex-1 bg-[#10b981] hover:bg-orange-500 text-white py-4 rounded-xl font-bold text-lg shadow-xl"
+                            className="flex-1 bg-[#10b981] hover:bg-orange-500 text-white py-4 rounded-[8px] font-bold text-lg shadow-xl"
                         >
                             {loading ? 'Analisando...' : 'Capturar'}
                         </button>
