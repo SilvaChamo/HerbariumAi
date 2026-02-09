@@ -8,18 +8,16 @@ interface CompanyFormProps {
     onSubmit: (company: CompanyDetail) => void;
     onClose: () => void;
     onAlert?: (title: string, message: string, type: 'success' | 'error' | 'info') => void;
+    onSwitchToProfessional?: () => void;
+    user?: any;
 }
 
-const getProductLimit = (plan: PlanType): number => {
-    if (plan === 'Parceiro') return Infinity;
-    if (plan === 'Premium') return 15;
-    if (plan === 'Básico') return 5;
-    return 0;
-};
+import { databaseService } from '../../services/databaseService';
 
 // Preços mensais base
-const MONTHLY_PRICES: Record<PlanType, number> = {
+const MONTHLY_PRICES: Record<string, number> = {
     'Free': 0,
+    'Gratuito': 0,
     'Básico': 500,
     'Premium': 1500,
     'Parceiro': 5000
@@ -29,31 +27,55 @@ const MONTHLY_PRICES: Record<PlanType, number> = {
 const ANNUAL_DISCOUNT = 0.17;
 const FEATURED_PRICE = 1000;
 
-const getPlanPrice = (plan: PlanType, billingPeriod: BillingPeriod): number => {
-    const monthlyPrice = MONTHLY_PRICES[plan];
+const getPlanPrice = (plan: string, billingPeriod: BillingPeriod): number => {
+    // Normalize plan name to match keys if necessary, or just use the plan name from DB if it matches
+    const price = MONTHLY_PRICES[plan] || 0;
     if (billingPeriod === 'annual') {
-        return Math.round(monthlyPrice * 12 * (1 - ANNUAL_DISCOUNT));
+        return Math.round(price * 12 * (1 - ANNUAL_DISCOUNT));
     }
-    return monthlyPrice;
+    return price;
 };
 
-const CompanyForm: React.FC<CompanyFormProps> = ({ initialData, onSubmit, onClose, onAlert }) => {
-    const [formData, setFormData] = useState<CompanyDetail>(initialData || {
-        registrationType: 'enterprise',
-        name: '',
-        email: '',
-        contact: '',
-        activity: '',
-        location: '',
-        geoLocation: '',
-        valueChain: 'Consumidor',
-        logo: '',
-        fullDescription: '',
-        services: '',
-        products: [],
-        plan: 'Free',
-        billingPeriod: 'monthly',
-        isFeatured: false
+const getProductLimit = (planName: string): number => {
+    // Assuming plans content is standardized, or map DB names to these keys
+    if (planName.toLowerCase().includes('parceiro')) return Infinity;
+    if (planName.toLowerCase().includes('premium')) return 50;
+    if (planName.toLowerCase().includes('básico')) return 10;
+    return 3;
+};
+
+const CompanyForm: React.FC<CompanyFormProps> = ({ initialData, onSubmit, onClose, onAlert, onSwitchToProfessional, user }) => {
+    const [plans, setPlans] = useState<any[]>([]);
+
+    // Fetch plans from DB
+    React.useEffect(() => {
+        databaseService.getPlans().then(setPlans).catch(console.error);
+    }, []);
+
+    const [formData, setFormData] = useState<CompanyDetail>(() => {
+        if (initialData) {
+            return {
+                ...initialData,
+                registrationType: initialData.registrationType || 'enterprise'
+            };
+        }
+        return {
+            registrationType: 'enterprise',
+            name: user?.name || '',
+            email: user?.email || '',
+            contact: '',
+            activity: '',
+            location: '',
+            geoLocation: '',
+            valueChain: 'Consumidor',
+            logo: user?.avatar_url || '',
+            fullDescription: '',
+            services: '',
+            products: [],
+            plan: 'Gratuito', // Default to 'Gratuito' which matches DB name usually, or map it
+            billingPeriod: 'monthly',
+            isFeatured: false
+        };
     });
 
     const [hasPaidPlan, setHasPaidPlan] = useState(false);
@@ -67,14 +89,8 @@ const CompanyForm: React.FC<CompanyFormProps> = ({ initialData, onSubmit, onClos
 
     const handleAddProductField = () => {
         const plan = formData.plan || 'Free';
-        if (plan === 'Free') {
-            onAlert?.('Atenção', "O plano gratuito não permite registar produtos. Faça o upgrade para um plano pago.", 'info');
-            return;
-        }
-        if (!hasPaidPlan && (initialData?.plan === 'Free' || !initialData)) {
-            onAlert?.('Atenção', "Por favor, efectue o pagamento do plano para activar o registo de produtos.", 'info');
-            return;
-        }
+
+        // Removed Free plan block
 
         const limit = getProductLimit(plan);
         if (formData.products.length < limit) {
@@ -143,7 +159,7 @@ const CompanyForm: React.FC<CompanyFormProps> = ({ initialData, onSubmit, onClos
             <div className="relative bg-slate-100/50 p-1.5 rounded-[8px] flex gap-1 h-12 overflow-hidden">
                 {/* Sliding Background */}
                 <div
-                    className={`absolute inset-y-1.5 w-[calc(50%-6px)] bg-orange-500/10 border border-orange-500 rounded-md transition-all duration-300 ease-out z-0`}
+                    className={`absolute inset-y-1.5 w-[calc(50%-6px)] bg-orange-500/10 border border-orange-500 rounded-lg transition-all duration-300 ease-out z-0`}
                     style={{
                         transform: `translateX(${isEnterprise ? '0' : '100%'})`,
                         left: isEnterprise ? '6px' : '0px'
@@ -153,15 +169,15 @@ const CompanyForm: React.FC<CompanyFormProps> = ({ initialData, onSubmit, onClos
                 <button
                     type="button"
                     onClick={() => setFormData({ ...formData, registrationType: 'enterprise' })}
-                    className={`relative flex-1 rounded-md text-[10px] font-black uppercase transition-colors duration-300 z-10 flex items-center justify-center gap-2 ${isEnterprise ? 'text-orange-600' : 'text-emerald-700 hover:text-orange-500'}`}
+                    className={`relative flex-1 rounded-lg text-[10px] font-black uppercase transition-colors duration-300 z-10 flex items-center justify-center gap-2 ${isEnterprise ? 'text-orange-600' : 'text-emerald-700 hover:text-orange-500'}`}
                 >
                     <i className="fa-solid fa-building text-xs"></i>
                     Empresa
                 </button>
                 <button
                     type="button"
-                    onClick={() => setFormData({ ...formData, registrationType: 'professional' })}
-                    className={`relative flex-1 rounded-md text-[10px] font-black uppercase transition-colors duration-300 z-10 flex items-center justify-center gap-2 ${!isEnterprise ? 'text-orange-600' : 'text-emerald-700 hover:text-orange-500'}`}
+                    onClick={() => onSwitchToProfessional?.()}
+                    className={`relative flex-1 rounded-lg text-[10px] font-black uppercase transition-colors duration-300 z-10 flex items-center justify-center gap-2 ${!isEnterprise ? 'text-orange-600' : 'text-emerald-700 hover:text-orange-500'}`}
                 >
                     <i className="fa-solid fa-user-tie text-xs"></i>
                     Profissional
@@ -177,7 +193,7 @@ const CompanyForm: React.FC<CompanyFormProps> = ({ initialData, onSubmit, onClos
                         type="text"
                         value={formData.name}
                         onChange={e => setFormData({ ...formData, name: e.target.value })}
-                        className="w-full bg-white border border-slate-200 p-2.5 pl-11 rounded-[8px] text-[12px] text-slate-700 focus:border-emerald-400 outline-none transition-all shadow-sm"
+                        className="w-full bg-white border border-slate-200 p-2.5 pl-11 rounded-lg text-[12px] text-slate-700 focus:border-emerald-400 outline-none transition-all shadow-sm"
                         placeholder={isEnterprise ? "Nome da Empresa / Entidade" : "Nome Completo do Profissional"}
                     />
                 </div>
@@ -185,7 +201,7 @@ const CompanyForm: React.FC<CompanyFormProps> = ({ initialData, onSubmit, onClos
                 {/* Grid Logo (L) + Inputs (R) */}
                 <div className="grid grid-cols-[110px_1fr] gap-3">
                     <div className="relative h-full">
-                        <label className="flex flex-col items-center justify-center w-full h-full bg-white border border-dashed border-slate-200 rounded-[8px] cursor-pointer hover:border-orange-400 hover:bg-orange-50 transition-all overflow-hidden">
+                        <label className="flex flex-col items-center justify-center w-full h-full bg-white border border-dashed border-slate-200 rounded-lg cursor-pointer hover:border-orange-400 hover:bg-orange-50 transition-all overflow-hidden">
                             {formData.logo ? (
                                 <img src={formData.logo} className="w-full h-full object-cover" />
                             ) : (
@@ -237,7 +253,7 @@ const CompanyForm: React.FC<CompanyFormProps> = ({ initialData, onSubmit, onClos
                     <div className="space-y-3">
                         <div className="relative">
                             <i className="fa-solid fa-phone absolute left-3 top-1/2 -translate-y-1/2 text-slate-300 text-[11px]"></i>
-                            <input required type="tel" value={formData.contact} onChange={e => setFormData({ ...formData, contact: e.target.value })} className="w-full bg-white border border-slate-200 p-2.5 pl-9 rounded-[8px] text-[12px] focus:border-emerald-400 outline-none transition-all" placeholder="Telemóvel" />
+                            <input required type="tel" value={formData.contact} onChange={e => setFormData({ ...formData, contact: e.target.value })} className="w-full bg-white border border-slate-200 p-2.5 pl-9 rounded-lg text-[12px] focus:border-emerald-400 outline-none transition-all" placeholder="Telemóvel" />
                         </div>
                         <div className="relative">
                             <i className={`fa-solid ${isEnterprise ? 'fa-link' : 'fa-graduation-cap'} absolute left-3 top-1/2 -translate-y-1/2 text-slate-300 text-[11px]`}></i>
@@ -245,7 +261,7 @@ const CompanyForm: React.FC<CompanyFormProps> = ({ initialData, onSubmit, onClos
                                 required
                                 value={formData.valueChain}
                                 onChange={e => setFormData({ ...formData, valueChain: e.target.value as any })}
-                                className="w-full bg-white border border-slate-200 p-2.5 pl-9 rounded-[8px] text-[12px] outline-none appearance-none focus:border-emerald-400 transition-all pr-8"
+                                className="w-full bg-white border border-slate-200 p-2.5 pl-9 rounded-lg text-[12px] outline-none appearance-none focus:border-emerald-400 transition-all pr-8"
                             >
                                 {isEnterprise ? (
                                     <>
@@ -271,42 +287,44 @@ const CompanyForm: React.FC<CompanyFormProps> = ({ initialData, onSubmit, onClos
                             </select>
                             <i className="fa-solid fa-chevron-down absolute right-3 top-1/2 -translate-y-1/2 text-slate-300 text-[9px] pointer-events-none"></i>
                         </div>
-                        <div className="relative">
-                            <i className="fa-solid fa-map-pin absolute left-3 top-1/2 -translate-y-1/2 text-slate-300 text-[11px]"></i>
-                            <select
-                                required
-                                value={formData.location}
-                                onChange={e => setFormData({ ...formData, location: e.target.value })}
-                                className="w-full bg-white border border-slate-200 p-2.5 pl-9 rounded-[8px] text-[12px] outline-none appearance-none focus:border-emerald-400 transition-all pr-8"
-                            >
-                                <option value="" disabled>Província</option>
-                                <option value="Niassa">Niassa</option>
-                                <option value="Cabo Delgado">Cabo Delgado</option>
-                                <option value="Nampula">Nampula</option>
-                                <option value="Zambézia">Zambézia</option>
-                                <option value="Tete">Tete</option>
-                                <option value="Manica">Manica</option>
-                                <option value="Sofala">Sofala</option>
-                                <option value="Inhambane">Inhambane</option>
-                                <option value="Gaza">Gaza</option>
-                                <option value="Província de Maputo">Província de Maputo</option>
-                                <option value="Cidade de Maputo">Cidade de Maputo</option>
-                            </select>
-                            <i className="fa-solid fa-chevron-down absolute right-3 top-1/2 -translate-y-1/2 text-slate-300 text-[9px] pointer-events-none"></i>
-                        </div>
+
                     </div>
                 </div>
 
                 {/* Additional Full Width Fields */}
                 <div className="space-y-3">
                     <div className="relative">
-                        <i className="fa-solid fa-location-arrow absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-300 text-sm"></i>
-                        <input type="text" value={formData.geoLocation} onChange={e => setFormData({ ...formData, geoLocation: e.target.value })} className="w-full bg-white border border-slate-200 p-2.5 pl-11 rounded-[8px] text-[12px] focus:border-emerald-400 outline-none transition-all shadow-sm" placeholder="Endereço" />
+                        <i className="fa-solid fa-envelope absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-300 text-sm"></i>
+                        <input required type="email" value={formData.email} onChange={e => setFormData({ ...formData, email: e.target.value })} className="w-full bg-white border border-slate-200 p-2.5 pl-11 rounded-lg text-[12px] focus:border-emerald-400 outline-none transition-all shadow-sm" placeholder="E-mail" />
                     </div>
 
                     <div className="relative">
-                        <i className="fa-solid fa-envelope absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-300 text-sm"></i>
-                        <input required type="email" value={formData.email} onChange={e => setFormData({ ...formData, email: e.target.value })} className="w-full bg-white border border-slate-200 p-2.5 pl-11 rounded-[8px] text-[12px] focus:border-emerald-400 outline-none transition-all shadow-sm" placeholder="E-mail" />
+                        <i className="fa-solid fa-location-arrow absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-300 text-sm"></i>
+                        <input type="text" value={formData.geoLocation} onChange={e => setFormData({ ...formData, geoLocation: e.target.value })} className="w-full bg-white border border-slate-200 p-2.5 pl-11 rounded-lg text-[12px] focus:border-emerald-400 outline-none transition-all shadow-sm" placeholder="Endereço" />
+                    </div>
+
+                    <div className="relative">
+                        <i className="fa-solid fa-map-pin absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-300 text-sm"></i>
+                        <select
+                            required
+                            value={formData.location}
+                            onChange={e => setFormData({ ...formData, location: e.target.value })}
+                            className="w-full bg-white border border-slate-200 p-2.5 pl-11 rounded-lg text-[12px] outline-none appearance-none focus:border-emerald-400 transition-all pr-8 shadow-sm"
+                        >
+                            <option value="" disabled>Província</option>
+                            <option value="Niassa">Niassa</option>
+                            <option value="Cabo Delgado">Cabo Delgado</option>
+                            <option value="Nampula">Nampula</option>
+                            <option value="Zambézia">Zambézia</option>
+                            <option value="Tete">Tete</option>
+                            <option value="Manica">Manica</option>
+                            <option value="Sofala">Sofala</option>
+                            <option value="Inhambane">Inhambane</option>
+                            <option value="Gaza">Gaza</option>
+                            <option value="Província de Maputo">Província de Maputo</option>
+                            <option value="Cidade de Maputo">Cidade de Maputo</option>
+                        </select>
+                        <i className="fa-solid fa-chevron-down absolute right-3 top-1/2 -translate-y-1/2 text-slate-300 text-[10px] pointer-events-none"></i>
                     </div>
 
                     <div className="relative">
@@ -316,20 +334,20 @@ const CompanyForm: React.FC<CompanyFormProps> = ({ initialData, onSubmit, onClos
                             type="text"
                             value={formData.activity}
                             onChange={e => setFormData({ ...formData, activity: e.target.value })}
-                            className="w-full bg-white border border-slate-200 p-2.5 pl-11 rounded-[8px] text-[12px] text-emerald-700 focus:border-emerald-400 outline-none transition-all shadow-sm"
+                            className="w-full bg-white border border-slate-200 p-2.5 pl-11 rounded-lg text-[12px] text-emerald-700 focus:border-emerald-400 outline-none transition-all shadow-sm"
                             placeholder={isEnterprise ? "Actividade Principal (Ex: Revenda de Sementes)" : "Especialidade Principal (Ex: Agrónomo)"}
                         />
                     </div>
 
                     <div className="relative">
-                        <textarea rows={3} value={formData.fullDescription} onChange={e => setFormData({ ...formData, fullDescription: e.target.value })} className="w-full bg-white border border-slate-200 p-3 pt-3 rounded-[8px] text-[12px] focus:border-emerald-400 outline-none transition-all" placeholder={isEnterprise ? "Descrição da empresa..." : "Sobre o profissional..."} />
+                        <textarea rows={3} value={formData.fullDescription} onChange={e => setFormData({ ...formData, fullDescription: e.target.value })} className="w-full bg-white border border-slate-200 p-3 pt-3 rounded-lg text-[12px] focus:border-emerald-400 outline-none transition-all" placeholder={isEnterprise ? "Descrição da empresa..." : "Sobre o profissional..."} />
                     </div>
                 </div>
 
                 {/* Services Section */}
                 <div className="space-y-3 pt-3">
                     <div className="flex items-center gap-2 px-1">
-                        <div className="w-8 h-8 bg-emerald-50 text-emerald-600 rounded-[8px] flex items-center justify-center">
+                        <div className="w-8 h-8 bg-emerald-50 text-emerald-600 rounded-lg flex items-center justify-center">
                             <i className="fa-solid fa-handshake-angle text-xs"></i>
                         </div>
                         <p className="text-[10px] font-black text-[#1e293b] uppercase tracking-widest">
@@ -341,7 +359,7 @@ const CompanyForm: React.FC<CompanyFormProps> = ({ initialData, onSubmit, onClos
                             rows={4}
                             value={formData.services}
                             onChange={e => setFormData({ ...formData, services: e.target.value })}
-                            className="w-full bg-slate-50 border border-slate-200 p-4 rounded-[8px] text-[12px] focus:border-emerald-400 focus:bg-white outline-none transition-all shadow-inner"
+                            className="w-full bg-slate-50 border border-slate-200 p-4 rounded-lg text-[12px] focus:border-emerald-400 focus:bg-white outline-none transition-all shadow-inner"
                             placeholder="Descreva detalhadamente o que oferece (ex: Consultoria, Venda, Aluguer...)"
                         />
                     </div>
@@ -351,7 +369,7 @@ const CompanyForm: React.FC<CompanyFormProps> = ({ initialData, onSubmit, onClos
                 <div className="space-y-4 pt-4 border-t border-slate-100">
                     <div className="flex justify-between items-center px-1">
                         <div className="flex items-center gap-2">
-                            <div className="w-8 h-8 bg-orange-50 text-orange-500 rounded-[8px] flex items-center justify-center">
+                            <div className="w-8 h-8 bg-orange-50 text-orange-500 rounded-lg flex items-center justify-center">
                                 <i className="fa-solid fa-boxes-stacked text-xs"></i>
                             </div>
                             <p className="text-[10px] font-black text-[#1e293b] uppercase tracking-widest">
@@ -359,13 +377,13 @@ const CompanyForm: React.FC<CompanyFormProps> = ({ initialData, onSubmit, onClos
                             </p>
                         </div>
                         {formData.plan !== 'Parceiro' && (
-                            <span className="text-[9px] font-bold text-slate-400 bg-slate-100 px-2 py-1 rounded-md">
+                            <span className="text-[9px] font-bold text-slate-400 bg-slate-100 px-2 py-1 rounded-lg">
                                 {formData.products.length} / {formData.plan === 'Free' ? '0' : getProductLimit(formData.plan || 'Free')}
                             </span>
                         )}
                     </div>
                     {formData.products.map((prod, idx) => (
-                        <div key={idx} className="bg-white border border-slate-200 rounded-[8px] p-3 space-y-3 animate-in fade-in duration-200">
+                        <div key={idx} className="bg-white border border-slate-200 rounded-lg p-3 space-y-3 animate-in fade-in duration-200">
                             {/* Product Header with Remove Button */}
                             <div className="flex justify-between items-center">
                                 <span className="text-[10px] font-black text-slate-400 uppercase">Produto #{idx + 1}</span>
@@ -380,7 +398,7 @@ const CompanyForm: React.FC<CompanyFormProps> = ({ initialData, onSubmit, onClos
 
                             {/* Product Photo */}
                             <div className="relative">
-                                <label className="flex flex-col items-center justify-center w-full h-32 bg-slate-50 border border-dashed border-slate-200 rounded-[8px] cursor-pointer hover:border-orange-400 hover:bg-orange-50 transition-all overflow-hidden">
+                                <label className="flex flex-col items-center justify-center w-full h-32 bg-slate-50 border border-dashed border-slate-200 rounded-lg cursor-pointer hover:border-orange-400 hover:bg-orange-50 transition-all overflow-hidden">
                                     {prod.photo ? (
                                         <img src={prod.photo} className="w-full h-full object-cover" alt="Produto" />
                                     ) : (
@@ -434,14 +452,14 @@ const CompanyForm: React.FC<CompanyFormProps> = ({ initialData, onSubmit, onClos
                                     placeholder="Nome do Produto"
                                     value={prod.name}
                                     onChange={e => updateProduct(idx, 'name', e.target.value)}
-                                    className="bg-white border border-slate-200 p-2.5 rounded-[8px] text-[11px] focus:border-emerald-400 outline-none"
+                                    className="bg-white border border-slate-200 p-2.5 rounded-lg text-[10px] focus:border-emerald-400 outline-none"
                                 />
                                 <input
                                     type="text"
                                     placeholder="Preço (MT)"
                                     value={prod.price}
                                     onChange={e => updateProduct(idx, 'price', e.target.value)}
-                                    className="bg-white border border-slate-200 p-2.5 rounded-[8px] text-[11px] text-emerald-600 font-bold focus:border-emerald-400 outline-none"
+                                    className="bg-white border border-slate-200 p-2.5 rounded-lg text-[11px] text-emerald-600 font-bold focus:border-emerald-400 outline-none"
                                 />
                             </div>
 
@@ -450,7 +468,7 @@ const CompanyForm: React.FC<CompanyFormProps> = ({ initialData, onSubmit, onClos
                                 placeholder="Descrição do produto..."
                                 value={prod.description}
                                 onChange={e => updateProduct(idx, 'description', e.target.value)}
-                                className="w-full bg-white border border-slate-200 p-2.5 rounded-[8px] text-[11px] focus:border-emerald-400 outline-none resize-none"
+                                className="w-full bg-white border border-slate-200 p-2.5 rounded-lg text-[11px] focus:border-emerald-400 outline-none resize-none"
                                 rows={2}
                             />
 
@@ -470,23 +488,18 @@ const CompanyForm: React.FC<CompanyFormProps> = ({ initialData, onSubmit, onClos
                             </div>
                         </div>
                     ))}
-                    {formData.plan === 'Free' ? (
-                        <div className="bg-slate-50 border border-slate-100 rounded-[8px] p-3 text-center">
-                            <p className="text-[10px] text-slate-400 italic">O plano gratuito não permite registar produtos.</p>
-                        </div>
-                    ) : (
-                        <button
-                            type="button"
-                            onClick={handleAddProductField}
-                            disabled={!hasPaidPlan && (initialData?.plan === 'Free' || !initialData)}
-                            className={`w-full py-3 border border-dashed rounded-[8px] text-[11px] font-black uppercase transition-all ${!hasPaidPlan && (initialData?.plan === 'Free' || !initialData)
-                                ? 'border-slate-200 text-slate-300 cursor-not-allowed'
-                                : 'border-slate-300 text-slate-400 hover:border-orange-400 hover:text-orange-500'
-                                }`}
-                        >
-                            <i className="fa-solid fa-plus mr-1"></i> Adicionar
-                        </button>
-                    )}
+                    {/* Button enabled for all plans now (within limits) */}
+                    <button
+                        type="button"
+                        onClick={handleAddProductField}
+                        className={`w-full py-3 border border-dashed rounded-lg text-[11px] font-black uppercase transition-all ${formData.products.length >= getProductLimit(formData.plan || 'Free')
+                            ? 'border-slate-200 text-slate-300 cursor-not-allowed'
+                            : 'border-slate-300 text-slate-400 hover:border-orange-400 hover:text-orange-500'
+                            }`}
+                        disabled={formData.products.length >= getProductLimit(formData.plan || 'Free')}
+                    >
+                        <i className="fa-solid fa-plus mr-1"></i> Adicionar
+                    </button>
                 </div>
 
                 {/* Billing Period Selection */}
@@ -498,7 +511,7 @@ const CompanyForm: React.FC<CompanyFormProps> = ({ initialData, onSubmit, onClos
                                 key={period}
                                 type="button"
                                 onClick={() => { setFormData({ ...formData, billingPeriod: period }); setHasPaidPlan(false); }}
-                                className={`p-2.5 rounded-[8px] border text-[11px] font-bold transition-all ${formData.billingPeriod === period ? 'bg-[#1e293b] border-slate-800 text-white shadow-md' : 'bg-white border-slate-200 text-slate-500'}`}
+                                className={`p-2.5 rounded-lg border text-[11px] font-bold transition-all ${formData.billingPeriod === period ? 'bg-[#1e293b] border-slate-800 text-white shadow-md' : 'bg-white border-slate-200 text-slate-500'}`}
                             >
                                 {period === 'monthly' ? 'MENSAL' : 'ANUAL (-17%)'}
                             </button>
@@ -510,40 +523,41 @@ const CompanyForm: React.FC<CompanyFormProps> = ({ initialData, onSubmit, onClos
                 <div className="space-y-3 pt-3 border-t border-slate-100">
                     <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">Escolha seu Plano</p>
                     <div className="grid grid-cols-2 gap-2">
-                        {(['Free', 'Básico', 'Premium', 'Parceiro'] as PlanType[]).map(p => (
-                            <button
-                                key={p}
-                                type="button"
-                                onClick={() => {
-                                    // Only Parceiro plan gets featured automatically
-                                    const isNowFeatured = p === 'Parceiro';
-                                    setFormData({
-                                        ...formData,
-                                        plan: p,
-                                        products: [],
-                                        isFeatured: isNowFeatured
-                                    });
-                                    setHasPaidPlan(false);
-                                    // Only Parceiro has featured included/authorized automatically
-                                    if (p === 'Parceiro') setHasPaidFeatured(true);
-                                }}
-                                className={`p-2.5 rounded-[8px] border text-[12px] uppercase flex flex-col items-center gap-0.5 transition-all ${formData.plan === p ? 'bg-orange-500 border-orange-400 text-white shadow-md' : 'bg-white border-slate-200 text-slate-500'}`}
-                            >
-                                <span className="font-bold">{p}</span>
-                                <span className="opacity-70 text-[11px] font-normal">
-                                    {p === 'Free' ? '0 MT' : `${formatCurrency(getPlanPrice(p, formData.billingPeriod || 'monthly'))} MT`}
-                                </span>
-                                <span className="opacity-60 text-[9px] font-medium mt-0.5">
-                                    {p === 'Free' ? '0 produtos' : p === 'Básico' ? '5 produtos' : p === 'Premium' ? '15 produtos' : 'Ilimitado'}
-                                </span>
-                            </button>
-                        ))}
+                        {plans.length > 0 ? (
+                            plans.map(p => (
+                                <button
+                                    key={p.id}
+                                    type="button"
+                                    onClick={() => {
+                                        const isPartner = p.name === 'Parceiro';
+                                        setFormData({
+                                            ...formData,
+                                            plan: p.name,
+                                            isFeatured: isPartner
+                                        });
+                                        setHasPaidPlan(false);
+                                        if (isPartner) setHasPaidFeatured(true);
+                                    }}
+                                    className={`p-2.5 rounded-lg border text-[12px] uppercase flex flex-col items-center gap-0.5 transition-all ${formData.plan === p.name ? 'bg-orange-500 border-orange-400 text-white shadow-md' : 'bg-white border-slate-200 text-slate-500'}`}
+                                >
+                                    <span className="font-bold">{p.name}</span>
+                                    <span className="opacity-70 text-[11px] font-normal">
+                                        {p.price}
+                                    </span>
+                                    <span className="opacity-60 text-[9px] font-medium mt-0.5">
+                                        {getProductLimit(p.name)} produtos
+                                    </span>
+                                </button>
+                            ))
+                        ) : (
+                            <p className="text-xs text-slate-400 col-span-2 text-center p-4">A carregar planos...</p>
+                        )}
                     </div>
                 </div>
 
                 {/* Featured (Destaque) Section */}
                 <div className="px-1">
-                    <div className="p-4 bg-orange-50 border border-orange-100 rounded-[8px] relative overflow-hidden group">
+                    <div className="p-4 bg-orange-50 border border-orange-100 rounded-lg relative overflow-hidden group">
                         <i className="fa-solid fa-star absolute -right-2 -top-2 text-orange-200/50 text-5xl rotate-12 transition-transform group-hover:scale-110"></i>
                         <div className="relative flex justify-between items-start">
                             <div className="space-y-1">
@@ -653,15 +667,8 @@ const CompanyForm: React.FC<CompanyFormProps> = ({ initialData, onSubmit, onClos
                                             setTimeout(() => {
                                                 setIsPaymentProcessing(false);
                                                 setHasPaidPlan(true);
-                                                setHasPaidFeatured(true);
-                                                const finalData = {
-                                                    ...formData,
-                                                    paymentMethod,
-                                                    paymentPhone,
-                                                    plan: formData.plan,
-                                                    isFeatured: formData.isFeatured
-                                                } as CompanyDetail;
-                                                onSubmit(finalData);
+                                                setHasPaidFeatured(true); // Assuming featured is also paid if included
+                                                onAlert?.('Sucesso', "Pagamento confirmado! Pode agora finalizar o registo.", 'success');
                                             }, 1500);
                                         }}
                                         disabled={isPaymentProcessing}
@@ -739,14 +746,7 @@ const CompanyForm: React.FC<CompanyFormProps> = ({ initialData, onSubmit, onClos
                                                 setIsPaymentProcessing(false);
                                                 setHasPaidPlan(true);
                                                 setHasPaidFeatured(true);
-                                                const finalData = {
-                                                    ...formData,
-                                                    paymentMethod: 'banco' as const,
-                                                    plan: formData.plan,
-                                                    isFeatured: formData.isFeatured,
-                                                    bankDetails
-                                                } as any;
-                                                onSubmit(finalData);
+                                                onAlert?.('Sucesso', "Comprovativo enviado! Pode agora finalizar o registo.", 'success');
                                             }, 1500);
                                         }}
                                         disabled={isPaymentProcessing}

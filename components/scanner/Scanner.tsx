@@ -98,12 +98,6 @@ const Scanner: React.FC<ScannerProps> = ({ onPlantIdentified, onLoadingChange })
                         Capturar Agora
                     </button>
 
-                    {/* Registration Shortcut on Home/Scanner */}
-                    <div className="bg-slate-50 border border-slate-100 rounded-[8px] p-2 text-center">
-                        <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest leading-tight">
-                            Toque no botão central para iniciar a câmara e identificar a planta
-                        </p>
-                    </div>
                     <button
                         onClick={() => window.dispatchEvent(new CustomEvent('open-company-form'))}
                         className="text-emerald-600 font-black text-[11px] uppercase tracking-tighter hover:text-orange-500 flex items-center justify-center gap-2 mx-auto"

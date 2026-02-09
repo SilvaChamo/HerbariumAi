@@ -28,7 +28,7 @@ const InvoiceReceipt: React.FC<InvoiceReceiptProps> = ({ company, onClose }) => 
 
     return (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-300">
-            <div className="bg-white w-full max-w-sm rounded-[2rem] overflow-hidden shadow-2xl animate-in zoom-in-95 duration-500">
+            <div className="bg-white w-full max-w-sm rounded-[10px] overflow-hidden shadow-2xl animate-in zoom-in-95 duration-500">
                 {/* Receipt Header */}
                 <div className="bg-emerald-500 p-8 text-white text-center relative">
                     <button
@@ -37,7 +37,7 @@ const InvoiceReceipt: React.FC<InvoiceReceiptProps> = ({ company, onClose }) => 
                     >
                         <i className="fa-solid fa-xmark"></i>
                     </button>
-                    <div className="w-16 h-16 bg-white rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg">
+                    <div className="w-16 h-16 bg-white rounded-lg flex items-center justify-center mx-auto mb-4 shadow-lg">
                         <i className="fa-solid fa-file-invoice-dollar text-[#10b981] text-2xl"></i>
                     </div>
                     <h2 className="text-xl font-black uppercase tracking-widest">Recibo de Pagamento</h2>
@@ -121,12 +121,12 @@ const InvoiceReceipt: React.FC<InvoiceReceiptProps> = ({ company, onClose }) => 
                 <div className="p-4 bg-slate-50 flex gap-2">
                     <button
                         onClick={() => window.print()}
-                        className="flex-1 py-3 bg-white border border-slate-200 rounded-xl text-slate-500 text-[10px] font-black uppercase hover:bg-slate-100 transition-all flex items-center justify-center gap-2"
+                        className="flex-1 py-3 bg-white border border-slate-200 rounded-lg text-slate-500 text-[10px] font-black uppercase hover:bg-slate-100 transition-all flex items-center justify-center gap-2"
                     >
                         <i className="fa-solid fa-print"></i> Imprimir
                     </button>
                     <button
-                        className="flex-1 py-3 bg-[#10b981] text-white rounded-xl text-[10px] font-black uppercase shadow-lg shadow-emerald-200 hover:bg-emerald-600 transition-all flex items-center justify-center gap-2"
+                        className="flex-1 py-3 bg-[#10b981] text-white rounded-lg text-[10px] font-black uppercase shadow-lg shadow-emerald-200 hover:bg-emerald-600 transition-all flex items-center justify-center gap-2"
                     >
                         <i className="fa-solid fa-share-nodes"></i> Partilhar
                     </button>

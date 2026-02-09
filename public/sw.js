@@ -1,11 +1,9 @@
-const CACHE_NAME = 'herbarium-ai-v1';
-const STATIC_CACHE = 'herbarium-static-v1';
-const DATA_CACHE = 'herbarium-data-v1';
+const CACHE_NAME = 'herbarium-ai-v2';
+const STATIC_CACHE = 'herbarium-static-v2';
+const DATA_CACHE = 'herbarium-data-v2';
 
 // Arquivos estáticos para cache
 const STATIC_ASSETS = [
-  '/',
-  '/index.html',
   '/manifest.json',
   '/icon.png'
 ];
@@ -39,6 +37,12 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
   const { request } = event;
   const url = new URL(request.url);
+
+  // Estratégia para navegação (HTML) - Network First
+  if (request.mode === 'navigate') {
+    event.respondWith(networkFirst(request));
+    return;
+  }
 
   // Estratégia para API calls
   if (url.pathname.includes('/api/') || url.hostname.includes('supabase')) {

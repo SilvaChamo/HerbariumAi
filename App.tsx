@@ -12,6 +12,7 @@ import Scanner from './components/scanner/Scanner';
 import AuthForm from './components/auth/AuthForm'; // Re-added AuthForm as it was likely an error in the instruction's provided block
 import Dialog from './components/ui/Dialog'; // Re-added Dialog as it was likely an error in the instruction's provided block
 import CompanyForm from './components/market/CompanyForm';
+import ProfessionalForm from './components/market/ProfessionalForm';
 import CompanyDetailView from './components/market/CompanyDetailView';
 import { SkeletonCard, SkeletonHeader } from './components/ui/SkeletonLoader';
 import MarketDashboard from './components/market/MarketDashboard';
@@ -35,6 +36,7 @@ const App: React.FC = () => {
   const [currentVideoIndex, setCurrentVideoIndex] = useState(0);
 
   const [showCompanyForm, setShowCompanyForm] = useState(false);
+  const [showProfessionalForm, setShowProfessionalForm] = useState(false);
   const [showVideoAdForm, setShowVideoAdForm] = useState(false);
   const [viewingCompany, setViewingCompany] = useState<CompanyDetail | null>(null);
 
@@ -79,7 +81,8 @@ const App: React.FC = () => {
         const userData = {
           id: session.user.id,
           email: session.user.email || '',
-          name: session.user.user_metadata.full_name || 'Usuário'
+          name: session.user.user_metadata.full_name || 'Usuário',
+          avatar_url: session.user.user_metadata.avatar_url || session.user.user_metadata.picture
         };
         setUser(userData);
         loadUserData(userData.id);
@@ -92,7 +95,8 @@ const App: React.FC = () => {
         const userData = {
           id: session.user.id,
           email: session.user.email || '',
-          name: session.user.user_metadata.full_name || 'Usuário'
+          name: session.user.user_metadata.full_name || 'Usuário',
+          avatar_url: session.user.user_metadata.avatar_url || session.user.user_metadata.picture
         };
         // Só actualiza se os dados mudarem efectivamente
         setUser(prev => prev?.id === userData.id ? prev : userData);
@@ -435,14 +439,36 @@ const App: React.FC = () => {
           </div>
         ) : activeTab === AppTab.DISCOVER ? (
           <div className="p-0 flex flex-col animate-in fade-in">
-            {showCompanyForm ? (
+            {showCompanyForm && user && (
               <CompanyForm
                 initialData={myCompany || undefined}
                 onSubmit={handleRegisterCompany}
                 onClose={() => setShowCompanyForm(false)}
+                onSwitchToProfessional={() => {
+                  setShowCompanyForm(false);
+                  setShowProfessionalForm(true);
+                }}
+                user={user}
                 onAlert={(title, message, type) => setDialog({ isOpen: true, title, message, type })}
               />
-            ) : viewingCompany ? (
+            )}
+
+            {showProfessionalForm && user && (
+              <ProfessionalForm
+                user={user}
+                onClose={() => setShowProfessionalForm(false)}
+                onSuccess={() => {
+                  setDialog({
+                    isOpen: true,
+                    title: 'Sucesso',
+                    message: 'Perfil profissional registado com sucesso! Aguarde a aprovação.',
+                    type: 'success'
+                  });
+                  setShowProfessionalForm(false);
+                }}
+              />
+            )}
+            {(!showCompanyForm && !showProfessionalForm) && viewingCompany ? (
               <CompanyDetailView
                 company={viewingCompany}
                 onBack={() => setViewingCompany(null)}

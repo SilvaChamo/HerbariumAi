@@ -81,12 +81,17 @@ const Header: React.FC<HeaderProps> = ({
                         <div className="relative">
                             <button
                                 onClick={() => onNavigate('account')}
-                                className="h-9 w-9 bg-emerald-500 rounded-full flex items-center justify-center text-white font-black text-sm shadow-sm hover:bg-emerald-600 transition-all"
+                                className="h-9 w-9 bg-emerald-500 flex items-center justify-center text-white font-black text-sm shadow-sm hover:bg-emerald-600 transition-all overflow-hidden"
+                                style={{ borderRadius: '50%' }}
                                 title={`${user.name} - Clique para ver dados da conta`}
                             >
-                                {user.name.charAt(0).toUpperCase()}
+                                {user.avatar_url ? (
+                                    <img src={user.avatar_url} alt={user.name} className="w-full h-full object-cover" />
+                                ) : (
+                                    user.name.charAt(0).toUpperCase()
+                                )}
                             </button>
-                            <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-emerald-400 rounded-full border-2 border-white"></div>
+                            <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-emerald-400 border-2 border-white" style={{ borderRadius: '50%' }}></div>
                         </div>
                     )}
                     <button

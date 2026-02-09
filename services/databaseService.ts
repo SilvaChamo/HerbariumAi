@@ -25,13 +25,13 @@ const mapDBToPlan = (plan: string): any => {
 const getProductLimit = (plan: string): number | null => {
     switch (plan) {
         case 'basic':
-            return 5;
+            return 10;
         case 'premium':
-            return 15;
+            return 50;
         case 'partner':
             return null; // unlimited
         default:
-            return null;
+            return 3; // Free plan
     }
 };
 
@@ -78,7 +78,7 @@ export const databaseService = {
                 logo_url: company.logo,
                 description: company.fullDescription,
                 services: company.services,
-                // products: company.products, // Temporarily disabled due to Supabase cache issue
+                products: company.products,
                 plan: mapPlanToDB(company.plan as string),
                 billing_period: company.billingPeriod,
                 is_featured: company.isFeatured,
@@ -303,13 +303,42 @@ export const databaseService = {
         };
     },
 
+    // --- Professionals ---
+    async saveProfessional(professional: any, userId: string) {
+        const { data, error } = await supabase
+            .from('professionals')
+            .upsert({
+                ...professional,
+                user_id: userId,
+                updated_at: new Date().toISOString()
+            })
+            .select()
+            .single();
+
+        if (error) throw error;
+        return data;
+    },
+
     async getProfessionals() {
         const { data, error } = await supabase
             .from('professionals')
             .select('*')
-            .order('created_at', { ascending: false });
+            .order('rating', { ascending: false });
+
         if (error) throw error;
-        return data as any[];
+        return data || [];
+    },
+
+    // --- Plans ---
+    async getPlans() {
+        const { data, error } = await supabase
+            .from('plans')
+            .select('*')
+            .eq('is_public', true)
+            .order('price', { ascending: true }); // Assuming price is stored as text/number that sorts correctly, or add order column
+
+        if (error) throw error;
+        return data || [];
     },
 
     async getProducts() {
