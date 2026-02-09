@@ -12,6 +12,8 @@ interface HeaderProps {
     onSearch: (query: string) => void;
     installPrompt: any;
     onInstall: () => void;
+    isDarkMode: boolean;
+    onToggleTheme: () => void;
 }
 
 const Header: React.FC<HeaderProps> = ({
@@ -24,7 +26,9 @@ const Header: React.FC<HeaderProps> = ({
     onNavigate,
     onSearch,
     installPrompt,
-    onInstall
+    onInstall,
+    isDarkMode,
+    onToggleTheme
 }) => {
     const [isMenuOpen, setIsMenuOpen] = React.useState(false);
 
@@ -60,19 +64,18 @@ const Header: React.FC<HeaderProps> = ({
 
     return (
         <>
-            <header className="px-6 py-5 bg-white border-b border-slate-100 flex justify-between items-center z-[60] relative">
-                <div onClick={onLogoClick} className="flex items-center gap-0 cursor-pointer">
-                    <img src="/icon.png" alt="Botânica" className="w-12 h-12 rounded-lg" />
-                    <div className="flex flex-col items-start leading-none">
-                        <p className="text-slate-400 text-[9px] font-black uppercase tracking-[0.2em]">
+            <header className="px-6 py-5 bg-white dark:bg-slate-900 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center z-[60] relative">
+                <div onClick={onLogoClick} className="flex items-center gap-1.5 cursor-pointer">
+                    <img src="/icon.png" alt="Botânica" className="w-10 h-10 rounded-lg" />
+                    <div className="flex flex-col items-start leading-none -ml-0.5">
+                        <p className="text-slate-400 dark:text-slate-500 text-[9px] font-black uppercase tracking-[0.2em]">
                             {user ? 'Olá' : 'BEM-VINDO(A)'}
                         </p>
-                        <h1 className="text-xl font-black text-emerald-700 tracking-tight flex items-center">
-                            <span className="text-emerald-600">B</span>
-                            <span className="text-emerald-700">ot</span>
+                        <h1 className="text-xl font-black tracking-tight flex items-center">
+                            <span className="text-emerald-700 dark:text-emerald-500">ot</span>
                             <span className="text-orange-500">â</span>
-                            <span className="text-emerald-700">nic</span>
-                            <span className="text-emerald-700">a</span>
+                            <span className="text-emerald-700 dark:text-emerald-500">nic</span>
+                            <span className="text-emerald-700 dark:text-emerald-500">a</span>
                         </h1>
                     </div>
                 </div>
@@ -95,8 +98,15 @@ const Header: React.FC<HeaderProps> = ({
                         </div>
                     )}
                     <button
+                        onClick={onToggleTheme}
+                        className="h-9 w-9 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[10px] flex items-center justify-center hover:bg-emerald-50 dark:hover:bg-emerald-900/30 text-emerald-600 transition-all"
+                        title={isDarkMode ? 'Mudar para Tema Claro' : 'Mudar para Tema Escuro'}
+                    >
+                        <i className={`fa-solid ${isDarkMode ? 'fa-sun' : 'fa-moon'} text-sm`}></i>
+                    </button>
+                    <button
                         onClick={() => setIsMenuOpen(true)}
-                        className="h-9 w-9 bg-slate-50 border border-slate-200 rounded-[10px] flex items-center justify-center hover:bg-orange-50 text-orange-600 transition-all"
+                        className="h-9 w-9 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[10px] flex items-center justify-center hover:bg-orange-50 dark:hover:bg-orange-900/30 text-orange-600 transition-all"
                     >
                         <i className="fa-solid fa-bars-staggered text-sm"></i>
                     </button>
@@ -111,15 +121,15 @@ const Header: React.FC<HeaderProps> = ({
                         onClick={() => setIsMenuOpen(false)}
                     />
 
-                    <div className="absolute right-0 top-0 h-full w-[85%] max-w-[320px] bg-white shadow-2xl animate-in slide-in-from-right duration-500 flex flex-col">
-                        <div className="p-6 border-b border-slate-50 flex justify-between items-center bg-white sticky top-0 z-10">
+                    <div className="absolute right-0 top-0 h-full w-[85%] max-w-[320px] bg-white dark:bg-slate-900 shadow-2xl animate-in slide-in-from-right duration-500 flex flex-col">
+                        <div className="p-6 border-b border-slate-50 dark:border-slate-800 flex justify-between items-center bg-white dark:bg-slate-900 sticky top-0 z-10">
                             <div>
-                                <span className="text-[10px] font-black text-slate-300 uppercase tracking-[0.2em] block mb-1">Navegação</span>
-                                <h3 className="text-lg font-black text-slate-800 tracking-tight">Menu Principal</h3>
+                                <span className="text-[10px] font-black text-slate-300 dark:text-slate-600 uppercase tracking-[0.2em] block mb-1">Navegação</span>
+                                <h3 className="text-lg font-black text-slate-800 dark:text-slate-100 tracking-tight">Menu Principal</h3>
                             </div>
                             <button
                                 onClick={() => setIsMenuOpen(false)}
-                                className="w-10 h-10 rounded-[10px] bg-slate-50 flex items-center justify-center text-slate-400 hover:text-red-500 transition-all active:scale-90"
+                                className="w-10 h-10 rounded-[10px] bg-slate-50 dark:bg-slate-800 flex items-center justify-center text-slate-400 hover:text-red-500 transition-all active:scale-90"
                             >
                                 <i className="fa-solid fa-xmark"></i>
                             </button>
@@ -134,7 +144,7 @@ const Header: React.FC<HeaderProps> = ({
                                             setIsMenuOpen(false);
                                             window.dispatchEvent(new CustomEvent('open-company-form'));
                                         }}
-                                        className="w-full bg-emerald-500 text-white p-4 rounded-[10px] font-black text-[10px] uppercase tracking-[0.2em] shadow-lg shadow-emerald-100 flex items-center justify-center gap-3 active:scale-95 transition-all group"
+                                        className="w-full bg-emerald-500 text-white p-4 rounded-[10px] font-black text-[10px] uppercase tracking-[0.2em] shadow-lg shadow-emerald-100 dark:shadow-none flex items-center justify-center gap-3 active:scale-95 transition-all group"
                                     >
                                         <div className="w-8 h-8 bg-white/20 rounded-[10px] flex items-center justify-center">
                                             <i className="fa-solid fa-building-circle-plus text-sm"></i>
@@ -146,14 +156,14 @@ const Header: React.FC<HeaderProps> = ({
 
                             {menuSections.map((section, sIdx) => (
                                 <div key={sIdx} className="space-y-3">
-                                    <h4 className="text-[9px] font-black text-slate-300 uppercase tracking-[0.2em] px-4">{section.title}</h4>
+                                    <h4 className="text-[9px] font-black text-slate-300 dark:text-slate-600 uppercase tracking-[0.2em] px-4">{section.title}</h4>
                                     <div className="space-y-1">
                                         {section.items.map((item: any, iIdx) => {
                                             if (item.show === false) return null;
                                             return (
                                                 <button
                                                     key={iIdx}
-                                                    className="w-full flex items-center gap-4 p-3 px-4 rounded-[10px] hover:bg-slate-50 transition-all group active:scale-95 text-left"
+                                                    className="w-full flex items-center gap-4 p-3 px-4 rounded-[10px] hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-all group active:scale-95 text-left"
                                                     onClick={() => {
                                                         setIsMenuOpen(false);
                                                         if (item.action) {
@@ -167,10 +177,10 @@ const Header: React.FC<HeaderProps> = ({
                                                         }
                                                     }}
                                                 >
-                                                    <div className={`w-10 h-10 bg-slate-50 ${item.color || 'text-slate-400'} group-hover:scale-110 rounded-[10px] flex items-center justify-center text-sm transition-all shadow-sm border border-slate-100`}>
+                                                    <div className={`w-10 h-10 bg-slate-50 dark:bg-slate-800 ${item.color || 'text-slate-400 dark:text-slate-500'} group-hover:scale-110 rounded-[10px] flex items-center justify-center text-sm transition-all shadow-sm border border-slate-100 dark:border-slate-700`}>
                                                         <i className={`fa-solid ${item.icon}`}></i>
                                                     </div>
-                                                    <span className="font-bold text-slate-600 text-[13px] tracking-tight">{item.label}</span>
+                                                    <span className="font-bold text-slate-600 dark:text-slate-100 text-[13px] tracking-tight">{item.label}</span>
                                                 </button>
                                             );
                                         })}
@@ -179,10 +189,10 @@ const Header: React.FC<HeaderProps> = ({
                             ))}
                         </div>
 
-                        <div className="p-6 border-t border-slate-50 bg-slate-50/30">
+                        <div className="p-6 border-t border-slate-50 dark:border-slate-800 bg-slate-50/30 dark:bg-slate-800/20">
                             <div className="flex items-center justify-between opacity-40 grayscale">
-                                <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Botânica App v2.0</span>
-                                <i className="fa-solid fa-seedling text-slate-400"></i>
+                                <span className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Botânica App v2.0</span>
+                                <i className="fa-solid fa-seedling text-slate-400 dark:text-slate-500"></i>
                             </div>
                         </div>
                     </div>

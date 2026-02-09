@@ -23,8 +23,8 @@ const Dialog: React.FC<DialogProps> = ({ isOpen, title, message, type = 'info', 
             <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-[2px]" onClick={onClose}></div>
 
             {/* Modal */}
-            <div className="relative bg-white w-full max-w-[280px] rounded-[8px] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300 flex flex-col items-center p-8 text-center border border-slate-100">
-                <div className="mb-4 bg-slate-50 w-16 h-16 rounded-[8px] flex items-center justify-center shadow-inner">
+            <div className="relative bg-white dark:bg-slate-900 w-full max-w-[280px] rounded-[8px] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300 flex flex-col items-center p-8 text-center border border-slate-100 dark:border-slate-800">
+                <div className="mb-4 bg-slate-50 dark:bg-slate-800 w-16 h-16 rounded-[8px] flex items-center justify-center shadow-inner">
                     {icons[type]}
                 </div>
 
@@ -38,7 +38,7 @@ const Dialog: React.FC<DialogProps> = ({ isOpen, title, message, type = 'info', 
 
                 <button
                     onClick={onClose}
-                    className="w-full bg-[#10b981] hover:bg-orange-500 text-white py-3.5 rounded-[10px] font-black text-[11px] uppercase tracking-widest shadow-lg shadow-emerald-50 active:scale-95 transition-all"
+                    className="w-full bg-[#10b981] hover:bg-orange-500 text-white py-3.5 rounded-[10px] font-black text-[11px] uppercase tracking-widest shadow-lg shadow-emerald-50 dark:shadow-none active:scale-95 transition-all"
                 >
                     Continuar
                 </button>

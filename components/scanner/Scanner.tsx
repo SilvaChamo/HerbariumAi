@@ -94,22 +94,22 @@ const Scanner: React.FC<ScannerProps> = ({ onPlantIdentified, onLoadingChange })
                 <div className="space-y-10 animate-in fade-in zoom-in w-full">
                     <div
                         onClick={startCamera}
-                        className="w-48 h-48 bg-white rounded-full flex items-center justify-center mx-auto relative shadow-xl hover:shadow-orange-100 group transition-all cursor-pointer"
+                        className="w-48 h-48 bg-white dark:bg-slate-800 rounded-full flex items-center justify-center mx-auto relative shadow-xl hover:shadow-orange-100 dark:hover:shadow-none dark:shadow-none group transition-all cursor-pointer"
                     >
                         <div className="absolute inset-0 border-[3px] border-[#10b981] group-hover:border-orange-500 border-dashed rounded-full animate-[spin_20s_linear_infinite] opacity-60"></div>
-                        <div className="w-40 h-40 bg-[#f0fdf4] group-hover:bg-orange-50 rounded-full flex items-center justify-center transition-colors">
+                        <div className="w-40 h-40 bg-[#f0fdf4] dark:bg-emerald-900/20 group-hover:bg-orange-50 dark:group-hover:bg-orange-900/20 rounded-full flex items-center justify-center transition-colors">
                             <i className="fa-solid fa-camera text-5xl text-[#10b981] group-hover:text-orange-500"></i>
                         </div>
                     </div>
                     <div className="space-y-0">
-                        <h2 className="text-xl font-extrabold text-[#1e293b]">Scanner Botânico</h2>
-                        <p className="text-slate-500 text-xs px-6 leading-tight font-medium">
+                        <h2 className="text-xl font-extrabold text-[#1e293b] dark:text-slate-100">Scanner Botânico</h2>
+                        <p className="text-slate-500 dark:text-slate-200 text-xs px-6 leading-tight font-medium">
                             Capture imagens para identificar plantas e diagnosticar pragas em tempo real.
                         </p>
                     </div>
                     <button
                         onClick={startCamera}
-                        className="mt-5 bg-[#10b981] hover:bg-orange-500 text-white px-14 py-3 rounded-full font-bold shadow-lg transition-all active:scale-95"
+                        className="mt-5 bg-[#10b981] hover:bg-orange-500 text-white px-14 py-3 rounded-full font-bold shadow-lg dark:shadow-none transition-all active:scale-95"
                     >
                         Capturar Agora
                     </button>
@@ -136,13 +136,13 @@ const Scanner: React.FC<ScannerProps> = ({ onPlantIdentified, onLoadingChange })
                     <div className="flex gap-3">
                         <button
                             onClick={() => setScanning(false)}
-                            className="bg-white text-slate-400 h-16 w-16 rounded-[8px] border border-slate-200 shadow-sm"
+                            className="bg-white dark:bg-slate-800 text-slate-400 dark:text-slate-500 h-16 w-16 rounded-[8px] border border-slate-200 dark:border-slate-700 shadow-sm transition-colors"
                         >
                             <i className="fa-solid fa-xmark text-xl"></i>
                         </button>
                         <button
                             onClick={captureAndIdentify}
-                            className="flex-1 bg-[#10b981] hover:bg-orange-500 text-white py-4 rounded-[8px] font-bold text-lg shadow-xl"
+                            className="flex-1 bg-[#10b981] hover:bg-orange-500 text-white py-4 rounded-[8px] font-bold text-lg shadow-xl dark:shadow-none"
                         >
                             {loading ? 'Analisando...' : 'Capturar'}
                         </button>

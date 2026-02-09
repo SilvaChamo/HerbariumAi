@@ -401,5 +401,22 @@ export const databaseService = {
         ];
 
         return results;
+    },
+
+    mapCompanyData(d: any): CompanyDetail {
+        return {
+            ...d,
+            fullDescription: d.description || '',
+            billingPeriod: d.billing_period,
+            isFeatured: d.is_featured,
+            geoLocation: d.geo_location,
+            valueChain: d.value_chain,
+            logo: d.logo_url || '',
+            location: d.address || d.province || '',
+            plan: mapDBToPlan(d.plan),
+            products: d.products || [],
+            slug: d.slug,
+            isVerified: d.is_verified
+        };
     }
 };

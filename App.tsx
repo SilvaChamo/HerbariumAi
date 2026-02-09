@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { AppTab, PlantInfo, User, CompanyDetail } from './types';
 
 // Layout Components
 import Header from './components/layout/Header';
@@ -9,21 +8,27 @@ import LoadingOverlay from './components/layout/LoadingOverlay';
 // Feature Components
 import PlantDetail from './components/PlantDetail';
 import Scanner from './components/scanner/Scanner';
-import AuthForm from './components/auth/AuthForm'; // Re-added AuthForm as it was likely an error in the instruction's provided block
-import Dialog from './components/ui/Dialog'; // Re-added Dialog as it was likely an error in the instruction's provided block
+import AuthForm from './components/auth/AuthForm';
+import Dialog from './components/ui/Dialog';
 import CompanyForm from './components/market/CompanyForm';
 import ProfessionalForm from './components/market/ProfessionalForm';
 import CompanyDetailView from './components/market/CompanyDetailView';
-import { SkeletonCard, SkeletonHeader } from './components/ui/SkeletonLoader';
 import MarketDashboard from './components/market/MarketDashboard';
 import AccountDashboard from './components/market/AccountDashboard';
 import VideoAdForm from './components/market/VideoAdForm';
-
+import ProductDetailView from './components/market/ProductDetailView';
+import ProfessionalDetailView from './components/market/ProfessionalDetailView';
+import { SkeletonCard, SkeletonHeader } from './components/ui/SkeletonLoader';
+import { CompanyDetail, PlantInfo, User, Professional, MarketProduct, AppTab } from './types';
 import { supabase } from './supabaseClient';
 import { databaseService } from './services/databaseService';
 
 const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState<AppTab>(AppTab.SCAN);
+  const [isDarkMode, setIsDarkMode] = useState(() => {
+    const saved = localStorage.getItem('theme');
+    return saved === 'dark' || (!saved && window.matchMedia('(prefers-color-scheme: dark)').matches);
+  });
   const [user, setUser] = useState<User | null>(null);
   const [collection, setCollection] = useState<PlantInfo[]>([]);
   const [loading, setLoading] = useState(false);
@@ -39,11 +44,15 @@ const App: React.FC = () => {
   const [showProfessionalForm, setShowProfessionalForm] = useState(false);
   const [showVideoAdForm, setShowVideoAdForm] = useState(false);
   const [viewingCompany, setViewingCompany] = useState<CompanyDetail | null>(null);
+  const [viewingProduct, setViewingProduct] = useState<MarketProduct | null>(null);
+  const [viewingProfessional, setViewingProfessional] = useState<Professional | null>(null);
 
   // Controle de Dashboard
   const [showDashboard, setShowDashboard] = useState(false);
   const [myCompany, setMyCompany] = useState<CompanyDetail | null>(null);
   const [featuredCompanies, setFeaturedCompanies] = useState<CompanyDetail[]>([]);
+  const [recentProducts, setRecentProducts] = useState<MarketProduct[]>([]);
+  const [featuredProfessionals, setFeaturedProfessionals] = useState<Professional[]>([]);
 
   const [currentSlide, setCurrentSlide] = useState(0);
   const [pendingRegister, setPendingRegister] = useState(false);
@@ -58,8 +67,13 @@ const App: React.FC = () => {
 
   // Carregar dados iniciais e monitorar autenticação
   useEffect(() => {
-    // 1. Carregar Empresas em Destaque (Público)
     databaseService.getCompanies().then(setFeaturedCompanies).catch(console.error);
+
+    // 1.1 Carregar Produtos Recentes
+    databaseService.getProducts().then(prods => setRecentProducts(prods.slice(0, 6))).catch(console.error);
+
+    // 1.2 Carregar Profissionais em Destaque
+    databaseService.getProfessionals().then(profs => setFeaturedProfessionals(profs.slice(0, 6))).catch(console.error);
 
     // 2. Carregar Spots de Vídeo
     databaseService.getVideoAds()
@@ -112,6 +126,17 @@ const App: React.FC = () => {
       subscription.unsubscribe();
     };
   }, []); // Sem dependências para evitar loops infinitos
+
+  // Efeito para aplicar o tema no body
+  useEffect(() => {
+    if (isDarkMode) {
+      document.body.classList.add('dark');
+      localStorage.setItem('theme', 'dark');
+    } else {
+      document.body.classList.remove('dark');
+      localStorage.setItem('theme', 'light');
+    }
+  }, [isDarkMode]);
 
   // Efeito isolado para o atalho de registo via evento customizado e instalação PWA
   useEffect(() => {
@@ -255,7 +280,14 @@ const App: React.FC = () => {
     setLoading(true);
     setActiveCategory(category);
     try {
-      if (category === 'Empresas' || category === 'Agro-negócio' || category === 'Lojas de Insumos') {
+      if (category === 'Alertas') {
+        const results = [
+          { id: 'sms-alerts', name: 'Ativação de Alertas SMS', activity: 'Serviço de Mensagens', searchType: 'Alertas', icon: 'fa-comment-sms' },
+          { id: 'inbox-alerts', name: 'Inbox de SMS', activity: 'Histórico de Alertas', searchType: 'Alertas', icon: 'fa-inbox' },
+          { id: 'settings-alerts', name: 'Configurações de Alertas', activity: 'Personalização', searchType: 'Alertas', icon: 'fa-gears' }
+        ];
+        setFilteredResults(results);
+      } else if (category === 'Empresas' || category === 'Lojas de Insumos') {
         const results = await databaseService.getCompanies();
         setFilteredResults(results);
       } else if (category === 'Profissionais') {
@@ -325,8 +357,12 @@ const App: React.FC = () => {
     }
   };
 
+  const handleToggleTheme = () => {
+    setIsDarkMode(prev => !prev);
+  };
+
   return (
-    <div className="w-full sm:w-[clamp(360px,95vw,380px)] h-screen sm:h-[min(844px,calc(100vh-40px))] sm:my-4 flex flex-col relative overflow-hidden sm:rounded-[2.5rem] sm:border-[8px] sm:border-slate-800 shadow-2xl text-slate-800 transition-all duration-500 bg-[#f1f5f9]">
+    <div className={`w-full sm:w-[clamp(360px,95vw,380px)] h-screen sm:h-[min(844px,calc(100vh-40px))] sm:my-4 flex flex-col relative overflow-hidden sm:rounded-[2.5rem] sm:border-[8px] sm:border-slate-800 dark:sm:border-slate-900 shadow-2xl text-slate-800 dark:text-slate-100 transition-all duration-500 ${isDarkMode ? 'bg-[#0f172a]' : 'bg-[#f1f5f9]'}`}>
       <Header
         user={user}
         myCompany={myCompany}
@@ -338,6 +374,8 @@ const App: React.FC = () => {
         onSearch={handleGlobalSearch}
         installPrompt={deferredPrompt}
         onInstall={handleInstallClick}
+        isDarkMode={isDarkMode}
+        onToggleTheme={handleToggleTheme}
       />
 
       <main className="flex-1 overflow-y-auto relative z-10">
@@ -353,21 +391,77 @@ const App: React.FC = () => {
             {loading ? (
               <SkeletonHeader />
             ) : (
-              <div className="bg-white px-6 py-4 border-b border-slate-200 flex items-center justify-between sticky top-0 z-20">
+              <div className="bg-white dark:bg-slate-900 px-6 py-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between sticky top-0 z-20 transition-colors">
                 <div className="flex items-center gap-3">
                   <button
                     onClick={() => { setActiveCategory(null); setFilteredResults([]); }}
-                    className="w-8 h-8 rounded-full bg-slate-50 flex items-center justify-center text-slate-400 hover:text-emerald-600 transition-colors"
+                    className="w-8 h-8 rounded-full bg-slate-50 dark:bg-slate-800 flex items-center justify-center text-slate-400 dark:text-slate-500 hover:text-emerald-600 transition-colors"
                   >
                     <i className="fa-solid fa-arrow-left text-xs"></i>
                   </button>
                   <div className="leading-none">
-                    <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Mercado</h3>
-                    <h2 className="text-lg font-black text-slate-700 leading-none">{activeCategory}</h2>
+                    <h3 className="text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest leading-none mb-1">Mercado</h3>
+                    <h2 className="text-lg font-black text-slate-700 dark:text-slate-100 leading-none">{activeCategory}</h2>
                   </div>
                 </div>
-                <div className="bg-emerald-50 px-3 py-1 rounded-full">
-                  <span className="text-[10px] font-black text-emerald-600">{filteredResults.length} Encontrados</span>
+                <div className="bg-emerald-50 dark:bg-emerald-900/30 px-3 py-1 rounded-full border border-emerald-100 dark:border-emerald-800/50">
+                  <span className="text-[10px] font-black text-emerald-600 dark:text-emerald-500">{filteredResults.length} Encontrados</span>
+                </div>
+              </div>
+            )}
+
+            {/* Featured Section inside Category */}
+            {!loading && activeCategory === 'Produtos' && recentProducts.length > 0 && (
+              <div className="px-6 space-y-4 py-6 bg-slate-50/50 dark:bg-slate-800/20 border-b border-slate-100 dark:border-slate-800">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-[11px] font-black uppercase text-emerald-600 dark:text-emerald-500 tracking-widest">Produtos Recentes</h3>
+                </div>
+                <div className="flex gap-4 overflow-x-auto pb-2 -mx-2 px-2 scrollbar-none">
+                  {recentProducts.map((prod) => (
+                    <div
+                      key={prod.id}
+                      onClick={() => setViewingProduct(prod)}
+                      className="w-32 shrink-0 space-y-2 group cursor-pointer"
+                    >
+                      <div className="aspect-square bg-white dark:bg-[#1a1f2c] rounded-2xl overflow-hidden border border-slate-100 dark:border-slate-700/50 p-2 flex items-center justify-center shadow-sm">
+                        <img src={prod.image_url} className="w-full h-full object-contain group-hover:scale-110 transition-transform" alt={prod.name} />
+                      </div>
+                      <div className="px-1">
+                        <h4 className="text-[10px] font-black text-slate-700 dark:text-white truncate uppercase tracking-tight">{prod.name}</h4>
+                        <p className="text-[10px] font-bold text-emerald-600 dark:text-emerald-500">{prod.price} MT</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {!loading && activeCategory === 'Profissionais' && featuredProfessionals.length > 0 && (
+              <div className="px-6 space-y-4 py-6 bg-slate-50/50 dark:bg-slate-800/20 border-b border-slate-100 dark:border-slate-800">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-[11px] font-black uppercase text-emerald-600 dark:text-emerald-500 tracking-widest">Profissionais em Destaque</h3>
+                </div>
+                <div className="grid grid-cols-1 gap-3">
+                  {featuredProfessionals.slice(0, 2).map((prof) => (
+                    <div
+                      key={prof.id}
+                      onClick={() => setViewingProfessional(prof)}
+                      className="bg-white dark:bg-[#1a1f2c] p-4 rounded-2xl border border-slate-100 dark:border-slate-700/50 flex items-center gap-4 hover:border-orange-400 transition-all cursor-pointer group shadow-sm"
+                    >
+                      <div className="w-12 h-12 rounded-xl bg-slate-50 dark:bg-slate-800 overflow-hidden shrink-0 border border-slate-100 dark:border-slate-700 flex items-center justify-center">
+                        {prof.image_url ? (
+                          <img src={prof.image_url} className="w-full h-full object-cover group-hover:scale-110 transition-transform" alt={prof.name} />
+                        ) : (
+                          <i className="fa-solid fa-user text-xl text-slate-300 dark:text-slate-600"></i>
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <h4 className="text-[12px] font-black text-slate-700 dark:text-white truncate uppercase tracking-tight">{prof.name}</h4>
+                        <p className="text-[10px] text-emerald-600 dark:text-emerald-500 font-bold uppercase tracking-tight">{prof.role || prof.profession}</p>
+                      </div>
+                      <i className="fa-solid fa-chevron-right text-slate-300 group-hover:text-orange-400 text-xs pr-1"></i>
+                    </div>
+                  ))}
                 </div>
               </div>
             )}
@@ -381,43 +475,62 @@ const App: React.FC = () => {
                   <div
                     key={idx}
                     onClick={() => {
-                      if (item.activity || item.searchType === 'Empresa') { // It's a company
+                      if (item.category === 'Profissional' || item.searchType === 'Profissional') {
+                        setViewingProfessional(item);
+                        setActiveCategory(null);
+                        setFilteredResults([]);
+                      } else if (item.company_id || item.searchType === 'Produto') {
+                        setViewingProduct(item);
+                        setActiveCategory(null);
+                        setFilteredResults([]);
+                      } else if (item.searchType === 'Alertas') {
+                        setDialog({
+                          isOpen: true,
+                          title: item.name,
+                          message: `O serviço de "${item.name}" será ativado em breve. Esta funcionalidade está em fase final de testes.`,
+                          type: 'info'
+                        });
+                      } else {
                         setViewingCompany(item);
                         setActiveCategory(null);
                         setFilteredResults([]);
                       }
                     }}
-                    className="bg-white border border-slate-200 rounded-[8px] p-4 flex gap-4 hover:border-emerald-400 transition-all cursor-pointer group"
+                    className="bg-white dark:bg-[#1a1f2c] border border-slate-200 dark:border-slate-700/50 rounded-2xl p-5 flex gap-5 hover:border-orange-400 dark:hover:border-orange-500 transition-all cursor-pointer group shadow-sm active:scale-[0.98]"
                   >
-                    <div className="w-16 h-16 rounded-[10px] bg-white overflow-hidden shrink-0 border border-slate-100 flex items-center justify-center p-2">
-                      <img
-                        src={item.logo || item.image_url || item.photo_url || 'https://via.placeholder.com/150'}
-                        className="w-full h-full object-contain group-hover:scale-110 transition-transform"
-                        alt={item.name}
-                      />
+                    <div className="w-16 h-16 rounded-2xl bg-slate-50 dark:bg-slate-800/50 overflow-hidden shrink-0 border border-slate-100 dark:border-slate-700/30 flex items-center justify-center">
+                      {item.logo || item.image_url || item.photo || item.photo_url ? (
+                        <img
+                          src={item.logo || item.image_url || item.photo || item.photo_url}
+                          className="w-full h-full object-contain group-hover:scale-110 transition-transform"
+                          alt={item.name}
+                        />
+                      ) : (
+                        <i className={`fa-solid ${item.price ? 'fa-box' : 'fa-user'} text-2xl text-slate-300 dark:text-slate-600`}></i>
+                      )}
                     </div>
-                    <div className="flex-1 min-w-0">
+                    <div className="flex-1 min-w-0 pr-2">
                       <div className="flex items-start justify-between">
-                        <div>
-                          <h4 className="font-black text-slate-700 text-sm truncate">{item.name}</h4>
-                          <p className="text-[10px] text-slate-400 font-bold uppercase tracking-tight">
+                        <div className="space-y-1">
+                          <h4 className="font-black text-slate-700 dark:text-white text-[13px] leading-tight break-words uppercase tracking-tight">{item.name}</h4>
+                          <p className="text-[10px] text-emerald-600 dark:text-emerald-500 font-black uppercase tracking-tight">
                             {item.searchType ? `${item.searchType}: ` : ''}
                             {item.role || item.activity || item.category || 'Membro'}
                           </p>
                         </div>
                         {item.is_verified && (
-                          <i className="fa-solid fa-circle-check text-emerald-500 text-[10px]"></i>
+                          <i className="fa-solid fa-circle-check text-emerald-500 text-[10px] mt-1 shrink-0"></i>
                         )}
                       </div>
                       <div className="mt-2 flex items-center gap-3">
                         <div className="flex items-center gap-1">
                           <i className="fa-solid fa-location-dot text-[9px] text-orange-400"></i>
-                          <span className="text-[9px] text-slate-400 font-medium">{item.location || 'Moçambique'}</span>
+                          <span className="text-[10px] text-slate-400 dark:text-slate-500 font-bold uppercase tracking-tight">{item.location || 'MZ'}</span>
                         </div>
                         {item.rating && (
                           <div className="flex items-center gap-1">
-                            <i className="fa-solid fa-star text-[9px] text-yellow-400"></i>
-                            <span className="text-[9px] text-slate-400 font-bold">{item.rating}</span>
+                            <i className="fa-solid fa-star text-[9px] text-yellow-500"></i>
+                            <span className="text-[9px] text-slate-400 dark:text-slate-500 font-bold">{item.rating}</span>
                           </div>
                         )}
                       </div>
@@ -426,12 +539,12 @@ const App: React.FC = () => {
                 ))
               ) : (
                 <div className="py-20 flex flex-col items-center justify-center text-center space-y-4">
-                  <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center">
-                    <i className="fa-solid fa-magnifying-glass text-slate-200 text-2xl"></i>
+                  <div className="w-16 h-16 bg-slate-50 dark:bg-slate-800 rounded-full flex items-center justify-center">
+                    <i className="fa-solid fa-magnifying-glass text-slate-200 dark:text-slate-700 text-2xl"></i>
                   </div>
                   <div>
-                    <p className="text-xs font-black text-slate-400 uppercase tracking-widest">Nenhum resultado encontrado</p>
-                    <p className="text-[10px] text-slate-300 font-medium mt-1 px-10">Tente outra categoria ou verifique a sua ligação.</p>
+                    <p className="text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Nenhum resultado encontrado</p>
+                    <p className="text-[10px] text-slate-300 dark:text-slate-600 font-medium mt-1 px-10">Tente outra categoria ou verifique a sua ligação.</p>
                   </div>
                 </div>
               )}
@@ -473,10 +586,24 @@ const App: React.FC = () => {
                 company={viewingCompany}
                 onBack={() => setViewingCompany(null)}
               />
+            ) : viewingProduct ? (
+              <ProductDetailView
+                product={viewingProduct}
+                onBack={() => setViewingProduct(null)}
+                onViewCompany={(comp) => {
+                  setViewingProduct(null);
+                  setViewingCompany(comp);
+                }}
+              />
+            ) : viewingProfessional ? (
+              <ProfessionalDetailView
+                professional={viewingProfessional}
+                onBack={() => setViewingProfessional(null)}
+              />
             ) : (
               <div className="flex flex-col animate-in fade-in pb-10">
                 {/* Hero Slider (Architecture Mirror of Market) */}
-                <div className="aspect-video bg-white border-b border-slate-200 shadow-sm overflow-hidden relative group">
+                <div className="aspect-video bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden relative group">
                   {featuredCompanies.length > 0 ? (
                     featuredCompanies.map((emp, idx) => (
                       <div key={idx} className={`absolute inset-0 p-6 flex flex-col justify-between transition-all duration-700 ${idx === currentSlide ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-10 pointer-events-none'}`}>
@@ -485,26 +612,30 @@ const App: React.FC = () => {
                           <span className="px-2 py-1 bg-emerald-500 text-[9px] font-black text-white rounded uppercase tracking-widest shadow-sm">Premium</span>
                         </div>
 
-                        <div className="flex flex-col gap-3">
-                          <div className="h-12 w-full flex items-center justify-start">
-                            <img src={emp.logo} className="h-full max-w-[150px] object-contain" />
+                        <div className="flex flex-col gap-2">
+                          <div className="w-full flex items-center justify-start">
+                            <img
+                              src={emp.logo}
+                              className="max-h-16 max-w-[140px] object-contain"
+                              alt={emp.name}
+                            />
                           </div>
-                          <div>
-                            <div className="mb-1">
-                              <h4 className="font-black text-slate-700 text-lg leading-none">{emp.name}</h4>
+                          <div className="space-y-1 pr-12">
+                            <div>
+                              <h4 className="font-black text-slate-700 dark:text-slate-100 text-lg leading-tight break-words">{emp.name}</h4>
                             </div>
-                            <p className="text-[11px] text-slate-500 font-bold tracking-tight">{emp.activity}</p>
-                            <p className="text-[10px] text-slate-400 mt-2 font-medium flex items-center">
+                            <p className="text-[11px] text-slate-500 dark:text-slate-400 font-bold tracking-tight leading-snug break-words">{emp.activity}</p>
+                            <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-1 font-medium flex items-center">
                               <i className="fa-solid fa-location-dot mr-2 text-orange-500"></i> {emp.location}
                             </p>
 
                             {/* Ver Perfil Text Link */}
                             <div
                               onClick={(e) => { e.stopPropagation(); setViewingCompany(emp); }}
-                              className="inline-flex items-center gap-2 mt-4 cursor-pointer group/link hover:opacity-80 transition-all"
+                              className="inline-flex items-center gap-2 mt-2 cursor-pointer group/link hover:opacity-80 transition-all"
                             >
-                              <span className="text-[10px] font-black text-emerald-600 uppercase tracking-tighter border-b border-emerald-600/30 group-hover/link:border-emerald-600 transition-all">Ver Perfil da Empresa</span>
-                              <i className="fa-solid fa-arrow-right text-[9px] text-emerald-600 transition-transform group-hover/link:translate-x-1"></i>
+                              <span className="text-[10px] font-black text-emerald-600 dark:text-emerald-500 uppercase tracking-tighter border-b border-emerald-600/30 dark:border-emerald-500/30 group-hover/link:border-emerald-600 dark:group-hover/link:border-emerald-500 transition-all">Ver Perfil da Empresa</span>
+                              <i className="fa-solid fa-arrow-right text-[9px] text-emerald-600 dark:text-emerald-500 transition-transform group-hover/link:translate-x-1"></i>
                             </div>
                           </div>
                         </div>
@@ -512,12 +643,12 @@ const App: React.FC = () => {
                     ))
                   ) : (
                     <div className="absolute inset-0 flex flex-col items-center justify-center text-center p-6 space-y-3">
-                      <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center shadow-inner">
-                        <i className="fa-solid fa-store text-slate-200 text-3xl"></i>
+                      <div className="w-16 h-16 bg-slate-50 dark:bg-slate-800 rounded-full flex items-center justify-center shadow-inner">
+                        <i className="fa-solid fa-store text-slate-200 dark:text-slate-700 text-3xl"></i>
                       </div>
                       <div>
-                        <p className="text-[11px] font-black text-slate-400 uppercase tracking-widest">Nenhuma empresa em destaque</p>
-                        <p className="text-[9px] text-slate-300 font-bold uppercase mt-1">Seja o primeiro a aparecer aqui</p>
+                        <p className="text-[11px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Nenhuma empresa em destaque</p>
+                        <p className="text-[9px] text-slate-300 dark:text-slate-600 font-bold uppercase mt-1">Seja o primeiro a aparecer aqui</p>
                       </div>
                     </div>
                   )}
@@ -533,7 +664,7 @@ const App: React.FC = () => {
                       setShowCompanyForm(true);
                     }
                   }}
-                  className="bg-[#10b981] px-6 py-[10px] flex items-center justify-between cursor-pointer border-y border-emerald-500 hover:bg-[#f97316] transition-all group shadow-lg shadow-emerald-50"
+                  className="bg-[#10b981] mb-6 px-6 py-[10px] flex items-center justify-between cursor-pointer border-y border-emerald-500 hover:bg-[#f97316] transition-all group shadow-lg shadow-emerald-50 dark:shadow-none"
                 >
                   <div className="flex items-start gap-3">
                     <div className="w-7 h-7 bg-white/20 backdrop-blur-md border border-white/30 rounded flex items-center justify-center shrink-0 shadow-sm mt-0.5">
@@ -546,19 +677,20 @@ const App: React.FC = () => {
                   </div>
                 </div>
 
-                {/* Discover Categories (Mirror Spacing) */}
-                <div className="px-6 space-y-3 mt-3 pb-3">
+
+                {/* Discover Categories Section */}
+                <div className="px-6 space-y-3 mt-8 pb-3">
                   <div className="grid grid-cols-2 gap-3">
-                    {['Empresas', 'Produtos', 'Profissionais', 'Agro-negócio'].map(cat => (
+                    {['Empresas', 'Produtos', 'Profissionais', 'Alertas'].map(cat => (
                       <button
                         key={cat}
                         onClick={() => handleCategoryClick(cat)}
-                        className="bg-white border border-slate-200 p-4 rounded-[10px] flex flex-col items-center gap-3 hover:border-orange-400 transition-all hover:shadow-lg hover:shadow-slate-100 group active:scale-95"
+                        className="bg-white dark:bg-[#1a1f2c] border border-slate-200 dark:border-slate-700 p-4 rounded-2xl flex flex-col items-center gap-3 hover:border-orange-400 transition-all hover:shadow-lg hover:shadow-slate-100 dark:hover:shadow-none group active:scale-95"
                       >
-                        <div className="w-10 h-10 bg-emerald-50 text-[#10b981] group-hover:bg-orange-500 group-hover:text-white rounded-[10px] flex items-center justify-center text-lg transition-all shadow-sm">
-                          <i className={`fa-solid ${cat === 'Empresas' ? 'fa-building' : cat === 'Produtos' ? 'fa-box' : cat === 'Profissionais' ? 'fa-user' : 'fa-hands-holding-circle'}`}></i>
+                        <div className="w-12 h-12 bg-emerald-50 dark:bg-emerald-900/20 text-[#10b981] dark:text-emerald-500 group-hover:bg-orange-500 group-hover:text-white rounded-2xl flex items-center justify-center text-xl transition-all shadow-sm">
+                          <i className={`fa-solid ${cat === 'Empresas' ? 'fa-building' : cat === 'Produtos' ? 'fa-box' : cat === 'Profissionais' ? 'fa-user' : 'fa-bell'}`}></i>
                         </div>
-                        <span className="font-bold text-slate-700 text-[11px] uppercase tracking-tight">{cat}</span>
+                        <span className="font-bold text-slate-700 dark:text-slate-100 text-[11px] uppercase tracking-tight">{cat}</span>
                       </button>
                     ))}
                   </div>
@@ -575,7 +707,7 @@ const App: React.FC = () => {
           <div className="h-full flex flex-col animate-in fade-in">
             {/* Market Video Section (Ad Spot) */}
             <div className="">
-              <div className="aspect-video bg-white border-b border-slate-200 shadow-sm overflow-hidden flex flex-col relative group">
+              <div className="aspect-video bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden flex flex-col relative group">
                 <iframe
                   className="w-full h-full"
                   src={`${adVideos[currentVideoIndex]}?autoplay=1&mute=0&controls=0&modestbranding=1&loop=1&playlist=${adVideos[currentVideoIndex].split('/').pop()}&start=0&end=30`}
@@ -588,7 +720,7 @@ const App: React.FC = () => {
               </div>
               <div
                 onClick={() => setShowVideoAdForm(true)}
-                className="bg-[#10b981] px-6 py-[10px] flex items-center justify-between cursor-pointer border-y border-emerald-500 hover:bg-[#f97316] transition-all group shadow-lg shadow-emerald-50"
+                className="bg-[#10b981] mb-6 px-6 py-[10px] flex items-center justify-between cursor-pointer border-y border-emerald-500 hover:bg-[#f97316] transition-all group shadow-lg shadow-emerald-50 dark:shadow-none"
               >
                 <div className="flex items-start gap-3">
                   <div className="w-7 h-7 bg-white/20 backdrop-blur-md border border-white/30 rounded flex items-center justify-center shrink-0 shadow-sm mt-0.5">
@@ -606,18 +738,18 @@ const App: React.FC = () => {
             <div className="px-6 mt-3 pb-3">
               <div className="grid grid-cols-2 gap-3">
                 {[
-                  { label: 'Fornecedores', icon: 'fa-handshake' },
-                  { label: 'Produtores', icon: 'fa-seedling' },
-                  { label: 'Consumidores', icon: 'fa-user-tag' },
-                  { label: 'Profissionais', icon: 'fa-user-tie' },
-                  { label: 'Lojas de Insumos', icon: 'fa-shop' },
-                  { label: 'Maquinaria', icon: 'fa-tractor' }
+                  { label: 'Fornecedores', icon: 'fa-handshake', color: 'text-emerald-500' },
+                  { label: 'Produtores', icon: 'fa-seedling', color: 'text-emerald-500' },
+                  { label: 'Consumidores', icon: 'fa-user-tag', color: 'text-orange-500' },
+                  { label: 'Profissionais', icon: 'fa-user-tie', color: 'text-emerald-500' },
+                  { label: 'Alertas', icon: 'fa-bell', color: 'text-emerald-500' },
+                  { label: 'Maquinaria', icon: 'fa-tractor', color: 'text-emerald-500' }
                 ].map(cat => (
-                  <button key={cat.label} onClick={() => handleCategoryClick(cat.label)} className="bg-white border border-slate-200 p-4 rounded-[10px] flex flex-col items-center gap-3 hover:border-orange-400 transition-all group active:scale-95 shadow-sm">
-                    <div className="w-10 h-10 bg-emerald-50 text-[#10b981] group-hover:bg-orange-500 group-hover:text-white rounded-[10px] flex items-center justify-center text-lg transition-all">
+                  <button key={cat.label} onClick={() => handleCategoryClick(cat.label)} className="bg-white dark:bg-[#1a1f2c] border border-slate-200 dark:border-slate-700/50 p-6 rounded-2xl flex flex-col items-center gap-4 hover:border-orange-400 transition-all group active:scale-95 shadow-sm">
+                    <div className={`w-14 h-14 ${cat.label === 'Consumidores' ? 'bg-orange-500 text-white' : 'bg-slate-50 dark:bg-slate-800/50 ' + cat.color} rounded-2xl flex items-center justify-center text-xl transition-all shadow-sm`}>
                       <i className={`fa-solid ${cat.icon}`}></i>
                     </div>
-                    <span className="font-bold text-slate-800 text-[10px] uppercase">{cat.label}</span>
+                    <span className="font-black text-slate-800 dark:text-white text-[10px] uppercase tracking-widest leading-none text-center">{cat.label}</span>
                   </button>
                 ))}
               </div>
@@ -648,42 +780,44 @@ const App: React.FC = () => {
             />
           ) : (
             <div className="flex-1 flex flex-col items-center justify-center text-center p-8 space-y-6 h-full">
-              <div className="w-24 h-24 bg-slate-50 rounded-[2.5rem] flex items-center justify-center shadow-sm">
-                <i className="fa-solid fa-lock text-4xl text-slate-200"></i>
+              <div className="w-24 h-24 bg-slate-50 dark:bg-slate-800 rounded-[2.5rem] flex items-center justify-center shadow-sm">
+                <i className="fa-solid fa-lock text-4xl text-slate-200 dark:text-slate-700"></i>
               </div>
               <div>
-                <h2 className="text-2xl font-bold text-[#1e293b]">Área Restrita</h2>
-                <p className="text-xs text-slate-400 mt-2 px-6">Para aceder à sua conta e gerir os seus dados, por favor faça login.</p>
+                <h2 className="text-2xl font-bold text-[#1e293b] dark:text-slate-100">Área Restrita</h2>
+                <p className="text-xs text-slate-400 dark:text-slate-500 mt-2 px-6">Para aceder à sua conta e gerir os seus dados, por favor faça login.</p>
               </div>
               <button
                 onClick={() => setActiveTab(AppTab.AUTH)}
-                className="w-full max-w-[200px] bg-[#10b981] text-white py-3 rounded-lg font-black text-[11px] uppercase tracking-widest shadow-lg shadow-emerald-100 active:scale-95 transition-all"
+                className="w-full max-w-[200px] bg-[#10b981] text-white py-3 rounded-lg font-black text-[11px] uppercase tracking-widest shadow-lg shadow-emerald-100 dark:shadow-none active:scale-95 transition-all"
               >
                 Entrar | Registar
               </button>
             </div>
           )
         ) : null}
-      </main>
+      </main >
 
       <NavBar activeTab={activeTab} onTabChange={handleTabChange} />
 
-      {selectedPlant && (
-        <PlantDetail
-          plant={selectedPlant}
-          onClose={() => setSelectedPlant(null)}
-          onUpdateCustomName={async (id, name) => {
-            try {
-              await databaseService.updatePlant(id, { customName: name });
-              setCollection(prev => prev.map(p => p.id === id ? { ...p, customName: name } : p));
-              setSelectedPlant(null);
-            } catch (err: any) {
-              alert("Erro ao atualizar nome: " + err.message);
-            }
-          }}
-          onAddRecipe={() => { }}
-        />
-      )}
+      {
+        selectedPlant && (
+          <PlantDetail
+            plant={selectedPlant}
+            onClose={() => setSelectedPlant(null)}
+            onUpdateCustomName={async (id, name) => {
+              try {
+                await databaseService.updatePlant(id, { customName: name });
+                setCollection(prev => prev.map(p => p.id === id ? { ...p, customName: name } : p));
+                setSelectedPlant(null);
+              } catch (err: any) {
+                alert("Erro ao atualizar nome: " + err.message);
+              }
+            }}
+            onAddRecipe={() => { }}
+          />
+        )
+      }
 
       <LoadingOverlay isLoading={loading} />
 
@@ -695,52 +829,54 @@ const App: React.FC = () => {
         onClose={() => setDialog({ ...dialog, isOpen: false })}
       />
 
-      {showVideoAdForm && (
-        <VideoAdForm
-          onClose={() => setShowVideoAdForm(false)}
-          onSubmit={(data) => {
-            // Extrair ID do vídeo do link do YouTube
-            const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
-            const match = data.videoLink.match(regExp);
-            const videoId = (match && match[2].length === 11) ? match[2] : data.videoLink;
+      {
+        showVideoAdForm && (
+          <VideoAdForm
+            onClose={() => setShowVideoAdForm(false)}
+            onSubmit={(data) => {
+              // Extrair ID do vídeo do link do YouTube
+              const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+              const match = data.videoLink.match(regExp);
+              const videoId = (match && match[2].length === 11) ? match[2] : data.videoLink;
 
-            const embedUrl = videoId.includes('http') ?
-              (videoId.includes('embed') ? videoId : `https://www.youtube.com/embed/${videoId}`) :
-              `https://www.youtube.com/embed/${videoId}`;
+              const embedUrl = videoId.includes('http') ?
+                (videoId.includes('embed') ? videoId : `https://www.youtube.com/embed/${videoId}`) :
+                `https://www.youtube.com/embed/${videoId}`;
 
-            // Persistir no Banco de Dados
-            databaseService.saveVideoAd({
-              companyName: data.companyName,
-              phone: data.phone,
-              address: data.address,
-              videoLink: data.videoLink,
-              embedUrl: embedUrl
-            }).then(() => {
-              // Adicionar à playlist local APÓS o pagamento e persistência
-              setAdVideos(prev => [...prev, embedUrl]);
-              setCurrentVideoIndex(adVideos.length); // Pula para o novo vídeo
+              // Persistir no Banco de Dados
+              databaseService.saveVideoAd({
+                companyName: data.companyName,
+                phone: data.phone,
+                address: data.address,
+                videoLink: data.videoLink,
+                embedUrl: embedUrl
+              }).then(() => {
+                // Adicionar à playlist local APÓS o pagamento e persistência
+                setAdVideos(prev => [...prev, embedUrl]);
+                setCurrentVideoIndex(adVideos.length); // Pula para o novo vídeo
 
-              setDialog({
-                isOpen: true,
-                title: 'Publicidade Ativada',
-                message: `O vídeo da "${data.companyName}" foi pago e adicionado à playlist com sucesso!`,
-                type: 'success'
+                setDialog({
+                  isOpen: true,
+                  title: 'Publicidade Ativada',
+                  message: `O vídeo da "${data.companyName}" foi pago e adicionado à playlist com sucesso!`,
+                  type: 'success'
+                });
+              }).catch(err => {
+                console.error("Erro ao salvar vídeo:", err);
+                setDialog({
+                  isOpen: true,
+                  title: 'Erro no Cadastro',
+                  message: 'Houve um erro ao salvar seu vídeo. Por favor, entre em contacto.',
+                  type: 'error'
+                });
               });
-            }).catch(err => {
-              console.error("Erro ao salvar vídeo:", err);
-              setDialog({
-                isOpen: true,
-                title: 'Erro no Cadastro',
-                message: 'Houve um erro ao salvar seu vídeo. Por favor, entre em contacto.',
-                type: 'error'
-              });
-            });
 
-            setShowVideoAdForm(false);
-          }}
-        />
-      )}
-    </div>
+              setShowVideoAdForm(false);
+            }}
+          />
+        )
+      }
+    </div >
   );
 };
 

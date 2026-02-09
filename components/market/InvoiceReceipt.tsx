@@ -28,7 +28,7 @@ const InvoiceReceipt: React.FC<InvoiceReceiptProps> = ({ company, onClose }) => 
 
     return (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-300">
-            <div className="bg-white w-full max-w-sm rounded-[10px] overflow-hidden shadow-2xl animate-in zoom-in-95 duration-500">
+            <div className="bg-white dark:bg-[#1e293b] w-full max-w-sm rounded-[10px] overflow-hidden shadow-2xl animate-in zoom-in-95 duration-500">
                 {/* Receipt Header */}
                 <div className="bg-emerald-500 p-8 text-white text-center relative">
                     <button
@@ -49,34 +49,34 @@ const InvoiceReceipt: React.FC<InvoiceReceiptProps> = ({ company, onClose }) => 
                     {/* Decorative Notch/Cutout effect */}
                     <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 flex gap-1">
                         {[...Array(12)].map((_, i) => (
-                            <div key={i} className="w-4 h-4 rounded-full bg-white" />
+                            <div key={i} className="w-4 h-4 rounded-full bg-white dark:bg-slate-900" />
                         ))}
                     </div>
 
                     <div className="space-y-4">
                         <div className="flex justify-between items-start">
                             <div className="space-y-1">
-                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-tight">Emitido para</p>
-                                <p className="font-bold text-[#1e293b]">{company.name}</p>
-                                <p className="text-[10px] text-slate-500">{company.email}</p>
+                                <p className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-tight">Emitido para</p>
+                                <p className="font-bold text-[#1e293b] dark:text-slate-100">{company.name}</p>
+                                <p className="text-[10px] text-slate-500 dark:text-slate-400">{company.email}</p>
                             </div>
                             <div className="text-right space-y-1">
-                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-tight">Data</p>
-                                <p className="font-bold text-[#1e293b]">{today}</p>
+                                <p className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-tight">Data</p>
+                                <p className="font-bold text-[#1e293b] dark:text-slate-100">{today}</p>
                             </div>
                         </div>
 
                         <div className="pt-4 border-t border-dashed border-slate-100 space-y-3">
                             <div className="flex justify-between text-xs">
-                                <span className="text-slate-500 font-medium">
+                                <span className="text-slate-500 dark:text-slate-400 font-medium">
                                     Plano {company.plan} ({company.billingPeriod === 'monthly' ? 'Mensal' : 'Anual'})
                                 </span>
-                                <span className="font-bold text-slate-700">{formatCurrency(planPrice)} MT</span>
+                                <span className="font-bold text-slate-700 dark:text-slate-100">{formatCurrency(planPrice)} MT</span>
                             </div>
                             {company.isFeatured && (
                                 <div className="flex justify-between text-xs">
-                                    <span className="text-slate-500 font-medium">Destaque de Mercado</span>
-                                    <span className="font-bold text-slate-700">{formatCurrency(1000)} MT</span>
+                                    <span className="text-slate-500 dark:text-slate-400 font-medium">Destaque de Mercado</span>
+                                    <span className="font-bold text-slate-700 dark:text-slate-100">{formatCurrency(1000)} MT</span>
                                 </div>
                             )}
                         </div>
@@ -97,8 +97,8 @@ const InvoiceReceipt: React.FC<InvoiceReceiptProps> = ({ company, onClose }) => 
                             )}
                         </div>
 
-                        <div className="pt-4 border-t-2 border-slate-50 flex justify-between items-center">
-                            <span className="text-sm font-black text-slate-800 uppercase tracking-widest">Pago Total</span>
+                        <div className="pt-4 border-t-2 border-slate-50 dark:border-slate-800 flex justify-between items-center">
+                            <span className="text-sm font-black text-slate-800 dark:text-slate-100 uppercase tracking-widest">Pago Total</span>
                             <span className="text-xl font-black text-[#10b981]">{formatCurrency(total)} MT</span>
                         </div>
                     </div>
@@ -118,10 +118,10 @@ const InvoiceReceipt: React.FC<InvoiceReceiptProps> = ({ company, onClose }) => 
                     </div>
                 </div>
 
-                <div className="p-4 bg-slate-50 flex gap-2">
+                <div className="p-4 bg-slate-50 dark:bg-slate-900 flex gap-2">
                     <button
                         onClick={() => window.print()}
-                        className="flex-1 py-3 bg-white border border-slate-200 rounded-lg text-slate-500 text-[10px] font-black uppercase hover:bg-slate-100 transition-all flex items-center justify-center gap-2"
+                        className="flex-1 py-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 text-[10px] font-black uppercase hover:bg-slate-100 dark:hover:bg-slate-700 transition-all flex items-center justify-center gap-2"
                     >
                         <i className="fa-solid fa-print"></i> Imprimir
                     </button>
