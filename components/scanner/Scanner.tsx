@@ -17,10 +17,26 @@ const Scanner: React.FC<ScannerProps> = ({ onPlantIdentified, onLoadingChange })
     const startCamera = async () => {
         try {
             setScanning(true);
-            const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
-            if (videoRef.current) videoRef.current.srcObject = stream;
-        } catch (err) {
-            alert("Acesso à câmera negado.");
+            const stream = await navigator.mediaDevices.getUserMedia({
+                video: {
+                    facingMode: 'environment',
+                    width: { ideal: 1280 },
+                    height: { ideal: 720 }
+                }
+            });
+
+            if (videoRef.current) {
+                videoRef.current.srcObject = stream;
+                // Add explicit play for mobile browsers
+                try {
+                    await videoRef.current.play();
+                } catch (playErr) {
+                    console.error("Video play failed:", playErr);
+                }
+            }
+        } catch (err: any) {
+            console.error("Camera access error:", err);
+            alert(`Acesso à câmera negado: ${err.message || 'Erro desconhecido'}`);
             setScanning(false);
         }
     };
@@ -109,7 +125,13 @@ const Scanner: React.FC<ScannerProps> = ({ onPlantIdentified, onLoadingChange })
             ) : (
                 <div className="w-full h-full flex flex-col p-4 space-y-4">
                     <div className="relative rounded-[8px] overflow-hidden flex-1 bg-black shadow-inner border-4 border-white">
-                        <video ref={videoRef} autoPlay playsInline className="absolute w-full h-full object-cover" />
+                        <video
+                            ref={videoRef}
+                            autoPlay
+                            playsInline
+                            muted
+                            className="absolute w-full h-full object-cover"
+                        />
                     </div>
                     <div className="flex gap-3">
                         <button
