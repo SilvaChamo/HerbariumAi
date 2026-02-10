@@ -10,6 +10,8 @@ interface ProductDetailViewProps {
 
 const ProductDetailView: React.FC<ProductDetailViewProps> = ({ product, onBack, onViewCompany }) => {
     const [company, setCompany] = useState<CompanyDetail | null>(null);
+    const [suggestions, setSuggestions] = useState<any[]>([]);
+    const [relatedProfessional, setRelatedProfessional] = useState<any>(null);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
@@ -17,21 +19,36 @@ const ProductDetailView: React.FC<ProductDetailViewProps> = ({ product, onBack, 
         databaseService.logPageView('product', product.id).catch(console.error);
 
         // Fetch company info to show who sells it
-        const fetchCompany = async () => {
+        const fetchContext = async () => {
             try {
-                // In a real app, we'd have a getCompanyById or similar
-                // For now, search results often include the info or we can fetch all and filter
-                const companies = await databaseService.getCompanies();
+                const [companies, allProducts, allProfessionals] = await Promise.all([
+                    databaseService.getCompanies(),
+                    databaseService.getProducts(),
+                    databaseService.getProfessionals()
+                ]);
+
+                // Seller
                 const seller = companies.find(c => c.id === product.company_id);
                 if (seller) setCompany(seller);
+
+                // Suggestions (same category, different product)
+                const similar = allProducts
+                    .filter(p => p.category === product.category && p.id !== product.id)
+                    .slice(0, 3);
+                setSuggestions(similar);
+
+                // Related Professional (same province or role related to category)
+                const expert = allProfessionals[Math.floor(Math.random() * allProfessionals.length)];
+                setRelatedProfessional(expert);
+
             } catch (err) {
-                console.error('Erro ao procurar empresa vendedora:', err);
+                console.error('Erro ao procurar dados relacionados:', err);
             } finally {
                 setLoading(false);
             }
         };
 
-        fetchCompany();
+        fetchContext();
     }, [product.id, product.company_id]);
 
     const handleBuyWhatsApp = () => {
@@ -45,7 +62,7 @@ const ProductDetailView: React.FC<ProductDetailViewProps> = ({ product, onBack, 
             <header className="p-6 bg-white dark:bg-slate-900 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center sticky top-0 z-30">
                 <button
                     onClick={onBack}
-                    className="h-8 px-3 bg-slate-50 dark:bg-slate-800 text-slate-500 dark:text-slate-300 rounded-[8px] text-[10px] font-bold uppercase border border-slate-100 dark:border-slate-700"
+                    className="h-8 px-3 bg-slate-50 dark:bg-slate-800 text-slate-500 dark:text-slate-300 rounded-[12px] text-[10px] font-bold uppercase border border-slate-100 dark:border-slate-700"
                 >
                     <i className="fa-solid fa-arrow-left mr-1"></i> Voltar
                 </button>
@@ -82,15 +99,10 @@ const ProductDetailView: React.FC<ProductDetailViewProps> = ({ product, onBack, 
                     </p>
                 </div>
 
-                {loading ? (
-                    <div className="p-6 bg-slate-50 dark:bg-slate-800 rounded-xl animate-pulse">
-                        <div className="h-4 bg-slate-200 dark:bg-slate-700 rounded w-1/3 mb-4"></div>
-                        <div className="h-10 bg-slate-200 dark:bg-slate-700 rounded w-full"></div>
-                    </div>
-                ) : company ? (
+                {company && (
                     <div className="bg-slate-50 dark:bg-slate-800/50 p-6 rounded-2xl border border-slate-100 dark:border-slate-800 space-y-4">
                         <div className="flex items-center gap-4">
-                            <img src={company.logo} className="w-12 h-12 rounded-lg object-contain bg-white p-1" alt={company.name} />
+                            <img src={company.logo} className="w-12 h-12 rounded-[12px] object-contain bg-white p-1" alt={company.name} />
                             <div className="min-w-0">
                                 <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Vendido por</p>
                                 <h4 className="text-sm font-black text-slate-800 dark:text-white truncate">{company.name}</h4>
@@ -98,12 +110,47 @@ const ProductDetailView: React.FC<ProductDetailViewProps> = ({ product, onBack, 
                         </div>
                         <button
                             onClick={() => onViewCompany(company)}
-                            className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 py-3 rounded-xl text-[10px] font-black uppercase hover:border-emerald-500 transition-all font-titles"
+                            className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 py-3 rounded-[12px] text-[10px] font-black uppercase hover:border-emerald-500 transition-all font-titles"
                         >
                             Ver Perfil da Empresa
                         </button>
                     </div>
-                ) : null}
+                )}
+
+                {/* Suggestions Section */}
+                {suggestions.length > 0 && (
+                    <div className="space-y-4 pt-4 border-t border-slate-100 dark:border-slate-800">
+                        <h3 className="text-xs font-black uppercase text-slate-400 dark:text-slate-500 tracking-widest">Produtos Relacionados</h3>
+                        <div className="flex gap-4 overflow-x-auto pb-4 -mx-1 px-1 scrollbar-hide">
+                            {suggestions.map((p, i) => (
+                                <div key={i} className="min-w-[140px] w-[140px] space-y-2 group cursor-pointer" onClick={() => window.location.reload()}>
+                                    <div className="aspect-square rounded-[12px] overflow-hidden border border-slate-100 dark:border-slate-800 bg-slate-50">
+                                        <img src={p.image_url} className="w-full h-full object-cover group-hover:scale-110 transition-all" alt={p.name} />
+                                    </div>
+                                    <h4 className="text-[10px] font-bold text-slate-700 dark:text-slate-200 line-clamp-2 leading-tight">{p.name}</h4>
+                                    <p className="text-[10px] font-black text-emerald-600">{p.price} MT</p>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
+                {/* Related Professional */}
+                {relatedProfessional && (
+                    <div className="space-y-4 pt-4 border-t border-slate-100 dark:border-slate-800 mb-20">
+                        <h3 className="text-xs font-black uppercase text-slate-400 dark:text-slate-500 tracking-widest">Especialista Sugerido</h3>
+                        <div className="bg-orange-50/50 dark:bg-orange-900/10 p-4 rounded-[12px] border border-orange-100 dark:border-orange-800/30 flex items-center gap-4">
+                            <img src={relatedProfessional.image_url} className="w-12 h-12 rounded-full object-cover border-2 border-white dark:border-slate-800" alt={relatedProfessional.name} />
+                            <div className="flex-1 min-w-0">
+                                <h4 className="text-xs font-black text-slate-800 dark:text-white truncate">{relatedProfessional.name}</h4>
+                                <p className="text-[9px] font-bold text-orange-600 dark:text-orange-400 uppercase tracking-tight">{relatedProfessional.role || relatedProfessional.profession}</p>
+                            </div>
+                            <button className="w-8 h-8 bg-white dark:bg-slate-800 rounded-full flex items-center justify-center text-orange-500 shadow-sm border border-orange-100 dark:border-orange-800">
+                                <i className="fa-solid fa-chevron-right text-[10px]"></i>
+                            </button>
+                        </div>
+                    </div>
+                )}
 
                 <div className="grid grid-cols-2 gap-3 fixed bottom-6 left-6 right-6 z-40 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md p-2 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-2xl">
                     <button
@@ -115,7 +162,7 @@ const ProductDetailView: React.FC<ProductDetailViewProps> = ({ product, onBack, 
                     </button>
                     <button
                         onClick={() => {
-                            const shareUrl = window.location.href; // In real app use product URL
+                            const shareUrl = window.location.href;
                             if (navigator.share) {
                                 navigator.share({
                                     title: product.name,

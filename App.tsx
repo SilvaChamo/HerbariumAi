@@ -16,14 +16,17 @@ import CompanyDetailView from './components/market/CompanyDetailView';
 import MarketDashboard from './components/market/MarketDashboard';
 import AccountDashboard from './components/market/AccountDashboard';
 import VideoAdForm from './components/market/VideoAdForm';
+import VideoManagement from './components/market/VideoManagement';
 import ProductDetailView from './components/market/ProductDetailView';
 import ProfessionalDetailView from './components/market/ProfessionalDetailView';
 import { SkeletonCard, SkeletonHeader } from './components/ui/SkeletonLoader';
+import NewsDetailView from './components/market/NewsDetailView';
+import SearchEngine from './components/ui/SearchEngine';
 import { CompanyDetail, PlantInfo, User, Professional, MarketProduct, AppTab } from './types';
 import { supabase } from './supabaseClient';
 import { databaseService } from './services/databaseService';
 
-const ADMIN_EMAILS = ['silva.chamo@gmail.com', 'admin@botanica.co.mz', 'silva@agrodata.co.mz', 'chamo@agrodata.co.mz'];
+const ADMIN_EMAILS = ['silva.chamo@gmail.com', 'silvachamo@gmail.com', 'admin@botanica.co.mz', 'silva@agrodata.co.mz', 'chamo@agrodata.co.mz'];
 
 const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState<AppTab>(AppTab.SCAN);
@@ -45,9 +48,11 @@ const App: React.FC = () => {
   const [showCompanyForm, setShowCompanyForm] = useState(false);
   const [showProfessionalForm, setShowProfessionalForm] = useState(false);
   const [showVideoAdForm, setShowVideoAdForm] = useState(false);
+  const [showVideoManagement, setShowVideoManagement] = useState(false);
   const [viewingCompany, setViewingCompany] = useState<CompanyDetail | null>(null);
   const [viewingProduct, setViewingProduct] = useState<MarketProduct | null>(null);
   const [viewingProfessional, setViewingProfessional] = useState<Professional | null>(null);
+  const [viewingNews, setViewingNews] = useState<any | null>(null);
 
   // Controle de Dashboard
   const [showDashboard, setShowDashboard] = useState(false);
@@ -55,6 +60,10 @@ const App: React.FC = () => {
   const [featuredCompanies, setFeaturedCompanies] = useState<CompanyDetail[]>([]);
   const [recentProducts, setRecentProducts] = useState<MarketProduct[]>([]);
   const [featuredProfessionals, setFeaturedProfessionals] = useState<Professional[]>([]);
+  const [appStats, setAppStats] = useState({ companies: 0, products: 0, professionals: 0 });
+  const [isDbOnline, setIsDbOnline] = useState(true);
+  const [isSearchVisible, setIsSearchVisible] = useState(false);
+  const [showAccountCollections, setShowAccountCollections] = useState(false);
 
   const [currentSlide, setCurrentSlide] = useState(0);
   const [pendingRegister, setPendingRegister] = useState(false);
@@ -82,11 +91,14 @@ const App: React.FC = () => {
       .then(ads => {
         if (ads.length > 0) {
           const dbEmbeds = ads.map(ad => ad.embedUrl);
-          setAdVideos(prev => {
-            const existing = new Set(prev);
-            const nouveaux = dbEmbeds.filter(url => !existing.has(url));
-            return [...prev, ...nouveaux];
-          });
+          setAdVideos(dbEmbeds);
+        } else {
+          // Playlist padrão se estiver vazio (Livestock/Pecuária)
+          setAdVideos([
+            'https://www.youtube.com/embed/hcrHxPRDAvc',
+            'https://www.youtube.com/embed/pJwhw100QTc',
+            'https://www.youtube.com/embed/D-jU2-Dk_hU'
+          ]);
         }
       })
       .catch(console.error);
@@ -125,6 +137,10 @@ const App: React.FC = () => {
         setMyCompany(null);
       }
     });
+
+    // 4. Carregar Estatísticas e Verificar Conexão
+    databaseService.getAppStats().then(setAppStats).catch(console.error);
+    databaseService.checkConnection().then(setIsDbOnline).catch(() => setIsDbOnline(false));
 
     return () => {
       subscription.unsubscribe();
@@ -304,6 +320,9 @@ const App: React.FC = () => {
           { id: 'settings-alerts', name: 'Configurações de Alertas', activity: 'Personalização', searchType: 'Alertas', icon: 'fa-gears' }
         ];
         setFilteredResults(results);
+      } else if (category === 'Dicas & Notícias' || category === 'Notícias') {
+        const results = await databaseService.getNews();
+        setFilteredResults(results);
       } else if (category === 'Empresas' || category === 'Lojas de Insumos') {
         const results = await databaseService.getCompanies();
         setFilteredResults(results);
@@ -337,6 +356,66 @@ const App: React.FC = () => {
     }
   }, []);
 
+  const handleAdminAction = async (e: React.MouseEvent, action: 'edit' | 'archive' | 'delete', item: any) => {
+    e.stopPropagation();
+    const type = item.company_id || item.searchType === 'Produto' ? 'product' :
+      (item.category === 'Profissional' || item.searchType === 'Profissional' ? 'professional' : 'company');
+
+    if (action === 'delete') {
+      if (!window.confirm(`Tem certeza que deseja ELIMINAR permanentemente: ${item.name}?`)) return;
+      setLoading(true);
+      try {
+        if (type === 'company') {
+          await databaseService.deleteCompany(item.id);
+          setFeaturedCompanies(prev => prev.filter(i => i.id !== item.id));
+          if (myCompany?.id === item.id) setMyCompany(null);
+        } else if (type === 'professional') {
+          await databaseService.deleteProfessional(item.id);
+          setFeaturedProfessionals(prev => prev.filter(i => i.id !== item.id));
+        } else {
+          await databaseService.deleteProduct(item.id);
+          setRecentProducts(prev => prev.filter(i => i.id !== item.id));
+        }
+
+        setFilteredResults(prev => prev.filter(i => i.id !== item.id));
+        setDialog({ isOpen: true, title: 'Eliminado', message: `${item.name} foi removido com sucesso.`, type: 'success' });
+      } catch (err: any) {
+        alert("Erro ao eliminar: " + err.message);
+      } finally {
+        setLoading(false);
+      }
+    } else if (action === 'archive') {
+      const newStatus = !item.is_archived;
+      setLoading(true);
+      try {
+        if (type === 'company') {
+          await databaseService.archiveCompany(item.id, newStatus);
+          setFeaturedCompanies(prev => prev.filter(i => i.id !== item.id));
+        } else if (type === 'professional') {
+          await databaseService.archiveProfessional(item.id, newStatus);
+          setFeaturedProfessionals(prev => prev.filter(i => i.id !== item.id));
+        } else {
+          await databaseService.archiveProduct(item.id, newStatus);
+          setRecentProducts(prev => prev.filter(i => i.id !== item.id));
+        }
+
+        setFilteredResults(prev => prev.filter(i => i.id !== item.id));
+      } catch (err: any) {
+        alert("Erro ao arquivar: " + err.message);
+      } finally {
+        setLoading(false);
+      }
+    } else if (action === 'edit') {
+      if (type === 'company') {
+        setViewingCompany(item);
+      } else if (type === 'professional') {
+        setViewingProfessional(item);
+      } else {
+        setViewingProduct(item);
+      }
+    }
+  };
+
   const handleLogoClick = useCallback(() => {
     setShowDashboard(false);
     setViewingCompany(null);
@@ -347,10 +426,11 @@ const App: React.FC = () => {
 
   const handleTabChange = useCallback((tab: AppTab) => {
     setActiveTab(tab);
-    setShowDashboard(false);
+    setShowDashboard(tab === AppTab.ACCOUNT ? false : showDashboard);
+    setShowAccountCollections(false); // Reset when tab changes
     setViewingCompany(null);
     setShowCompanyForm(false);
-  }, []);
+  }, [showDashboard]);
 
   const handleInstallClick = async () => {
     if (!deferredPrompt) {
@@ -378,6 +458,33 @@ const App: React.FC = () => {
     setIsDarkMode(prev => !prev);
   };
 
+  const handleShowAbout = () => {
+    setDialog({
+      isOpen: true,
+      title: 'Sobre a Botânica',
+      message: 'A plataforma Botânica v2.0 é o ecossistema digital líder para o agronegócio em Moçambique, conectando produtores, fornecedores e especialistas em uma única rede integrada.',
+      type: 'info'
+    });
+  };
+
+  const handleShowPrivacy = () => {
+    setDialog({
+      isOpen: true,
+      title: 'Termos & Privacidade',
+      message: 'Os seus dados são protegidos por criptografia de ponta a ponta. Não partilhamos as suas informações comerciais com terceiros sem o seu consentimento explícito.',
+      type: 'info'
+    });
+  };
+
+  const handleHelp = () => {
+    setDialog({
+      isOpen: true,
+      title: 'Centro de Ajuda',
+      message: 'Precisa de ajuda? Entre em contacto com o nosso suporte via WhatsApp: +258 84 000 0000 ou email: suporte@agrodata.co.mz',
+      type: 'info'
+    });
+  };
+
   return (
     <div
       className={`w-full sm:w-[500px] flex flex-col relative overflow-hidden text-slate-800 dark:text-slate-100 transition-all duration-500 ${isDarkMode ? 'bg-[#0f172a]' : 'bg-[#f1f5f9]'}`}
@@ -390,12 +497,33 @@ const App: React.FC = () => {
         onLogoClick={handleLogoClick}
         onDashboardToggle={() => setShowDashboard(s => !s)}
         onLogout={handleLogout}
-        onNavigate={handleTabChange}
         onSearch={handleGlobalSearch}
         installPrompt={deferredPrompt}
         onInstall={handleInstallClick}
         isDarkMode={isDarkMode}
         onToggleTheme={handleToggleTheme}
+        appStats={appStats}
+        isDbOnline={isDbOnline}
+        onAbout={handleShowAbout}
+        onPrivacy={handleShowPrivacy}
+        onHelp={handleHelp}
+        onCategoryFilter={handleCategoryClick}
+        onSearchToggle={() => setIsSearchVisible(true)}
+        onNavigate={(tab) => {
+          if (tab === 'collection') {
+            setActiveTab(AppTab.ACCOUNT);
+            setShowAccountCollections(true);
+          } else {
+            handleTabChange(tab as AppTab);
+          }
+        }}
+      />
+
+      <SearchEngine
+        isVisible={isSearchVisible}
+        onClose={() => setIsSearchVisible(false)}
+        onSearch={handleGlobalSearch}
+        onCategoryFilter={handleCategoryClick}
       />
 
       <main className="flex-1 overflow-y-auto relative z-10">
@@ -510,14 +638,38 @@ const App: React.FC = () => {
                           message: `O serviço de "${item.name}" será ativado em breve. Esta funcionalidade está em fase final de testes.`,
                           type: 'info'
                         });
+                      } else if (item.searchType === 'Notícias' || item.searchType === 'Dicas') {
+                        setViewingNews(item);
+                        setActiveCategory(null);
+                        setFilteredResults([]);
                       } else {
                         setViewingCompany(item);
                         setActiveCategory(null);
                         setFilteredResults([]);
                       }
                     }}
-                    className="bg-white dark:bg-[#1a1f2c] border border-slate-200 dark:border-slate-700/50 rounded-2xl p-5 flex gap-5 hover:border-orange-400 dark:hover:border-orange-500 transition-all cursor-pointer group shadow-sm active:scale-[0.98]"
+                    className={`relative bg-white dark:bg-[#1a1f2c] border border-slate-200 dark:border-slate-700/50 rounded-2xl p-5 flex gap-5 hover:border-orange-400 dark:hover:border-orange-500 transition-all cursor-pointer group shadow-sm active:scale-[0.98] ${item.is_archived ? 'opacity-50 grayscale' : ''}`}
                   >
+                    {/* Admin Actions Overlay */}
+                    {user?.isAdmin && (
+                      <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                        <button
+                          onClick={(e) => handleAdminAction(e, 'archive', item)}
+                          className={`w-7 h-7 rounded-full flex items-center justify-center text-white shadow-lg transition-transform active:scale-90 ${item.is_archived ? 'bg-emerald-500' : 'bg-slate-500'}`}
+                          title={item.is_archived ? "Restaurar" : "Arquivar"}
+                        >
+                          <i className={`fa-solid ${item.is_archived ? 'fa-rotate-left' : 'fa-box-archive'} text-[10px]`}></i>
+                        </button>
+                        <button
+                          onClick={(e) => handleAdminAction(e, 'delete', item)}
+                          className="w-7 h-7 rounded-full bg-red-500 flex items-center justify-center text-white shadow-lg transition-transform active:scale-90"
+                          title="Eliminar"
+                        >
+                          <i className="fa-solid fa-trash text-[10px]"></i>
+                        </button>
+                      </div>
+                    )}
+
                     <div className="w-16 h-16 rounded-2xl bg-slate-50 dark:bg-slate-800/50 overflow-hidden shrink-0 border border-slate-100 dark:border-slate-700/30 flex items-center justify-center">
                       {item.logo || item.image_url || item.photo || item.photo_url ? (
                         <img
@@ -629,6 +781,11 @@ const App: React.FC = () => {
                 professional={viewingProfessional}
                 onBack={() => setViewingProfessional(null)}
               />
+            ) : viewingNews ? (
+              <NewsDetailView
+                news={viewingNews}
+                onBack={() => setViewingNews(null)}
+              />
             ) : (
               <div className="flex flex-col animate-in fade-in pb-10">
                 {/* Hero Slider (Architecture Mirror of Market) */}
@@ -710,14 +867,14 @@ const App: React.FC = () => {
                 {/* Discover Categories Section */}
                 <div className="px-6 space-y-3 mt-8 pb-3">
                   <div className="grid grid-cols-2 gap-3">
-                    {['Empresas', 'Produtos', 'Profissionais', 'Alertas'].map(cat => (
+                    {['Empresas', 'Produtos', 'Profissionais', 'Dicas & Notícias'].map(cat => (
                       <button
                         key={cat}
                         onClick={() => handleCategoryClick(cat)}
                         className="bg-white dark:bg-[#1a1f2c] border border-slate-200 dark:border-slate-700 p-4 rounded-2xl flex flex-col items-center gap-3 hover:border-orange-400 transition-all hover:shadow-lg hover:shadow-slate-100 dark:hover:shadow-none group active:scale-95"
                       >
                         <div className="w-12 h-12 bg-emerald-50 dark:bg-emerald-900/20 text-[#10b981] dark:text-emerald-500 group-hover:bg-orange-500 group-hover:text-white rounded-2xl flex items-center justify-center text-xl transition-all shadow-sm">
-                          <i className={`fa-solid ${cat === 'Empresas' ? 'fa-building' : cat === 'Produtos' ? 'fa-box' : cat === 'Profissionais' ? 'fa-user' : 'fa-bell'}`}></i>
+                          <i className={`fa-solid ${cat === 'Empresas' ? 'fa-building' : cat === 'Produtos' ? 'fa-box' : cat === 'Profissionais' ? 'fa-user' : 'fa-newspaper'}`}></i>
                         </div>
                         <span className="font-bold text-slate-700 dark:text-slate-100 text-[11px] uppercase tracking-tight">{cat}</span>
                       </button>
@@ -798,11 +955,17 @@ const App: React.FC = () => {
               user={user}
               company={myCompany}
               onLogout={handleLogout}
+              collection={collection}
+              onViewPlant={setSelectedPlant}
+              showCollections={showAccountCollections}
+              setShowCollections={setShowAccountCollections}
               onAdminAction={(action) => {
                 if (action === 'videos') {
-                  setShowVideoAdForm(true);
+                  setShowVideoManagement(true);
+                } else if (action === 'collections') {
+                  setShowAccountCollections(true);
                 } else {
-                  handleCategoryClick(action);
+                  handleCategoryClick(action as any);
                 }
               }}
               onEditCompany={() => {
@@ -888,8 +1051,11 @@ const App: React.FC = () => {
                 embedUrl: embedUrl
               }).then(() => {
                 // Adicionar à playlist local APÓS o pagamento e persistência
-                setAdVideos(prev => [...prev, embedUrl]);
-                setCurrentVideoIndex(adVideos.length); // Pula para o novo vídeo
+                setAdVideos(prev => {
+                  const next = [...prev, embedUrl];
+                  setCurrentVideoIndex(next.length - 1); // Jumps exactly to the new one
+                  return next;
+                });
 
                 setDialog({
                   isOpen: true,
@@ -898,11 +1064,12 @@ const App: React.FC = () => {
                   type: 'success'
                 });
               }).catch(err => {
-                console.error("Erro ao salvar vídeo:", err);
+                console.error("Erro CRÍTICO ao salvar vídeo:", err);
+                alert("Erro ao salvar vídeo: " + (err.message || 'Erro desconhecido na base de dados'));
                 setDialog({
                   isOpen: true,
                   title: 'Erro no Cadastro',
-                  message: 'Houve um erro ao salvar seu vídeo. Por favor, entre em contacto.',
+                  message: `Houve um erro técnico: ${err.message || 'Erro ao persistir dado'}. Verifique sua conexão ou permissão.`,
                   type: 'error'
                 });
               });
@@ -910,9 +1077,33 @@ const App: React.FC = () => {
               setShowVideoAdForm(false);
             }}
           />
-        )
-      }
-    </div >
+        )}
+
+      {showVideoManagement && (
+        <VideoManagement
+          onClose={() => {
+            setShowVideoManagement(false);
+            // Refresh playlist after management
+            databaseService.getVideoAds().then(ads => {
+              if (ads.length > 0) {
+                setAdVideos(ads.map(ad => ad.embedUrl));
+              } else {
+                // Reset to defaults if everything was deleted/archived
+                setAdVideos([
+                  'https://www.youtube.com/embed/hcrHxPRDAvc',
+                  'https://www.youtube.com/embed/pJwhw100QTc',
+                  'https://www.youtube.com/embed/D-jU2-Dk_hU'
+                ]);
+              }
+            });
+          }}
+          onAddVideo={() => {
+            setShowVideoManagement(false);
+            setShowVideoAdForm(true);
+          }}
+        />
+      )}
+    </div>
   );
 };
 

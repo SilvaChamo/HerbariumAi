@@ -3,6 +3,7 @@ import { QRCodeCanvas } from 'qrcode.react';
 import { User, CompanyDetail } from '../../types';
 import InvoiceReceipt from './InvoiceReceipt';
 import { databaseService } from '../../services/databaseService';
+import { supabase } from '../../supabaseClient';
 
 interface AccountDashboardProps {
     user: User;
@@ -11,6 +12,10 @@ interface AccountDashboardProps {
     onRegisterCompany: () => void;
     onLogout: () => void;
     onAdminAction?: (action: string) => void;
+    collection: any[];
+    onViewPlant: (plant: any) => void;
+    showCollections: boolean;
+    setShowCollections: (show: boolean) => void;
 }
 
 const AccountDashboard: React.FC<AccountDashboardProps> = ({
@@ -19,7 +24,11 @@ const AccountDashboard: React.FC<AccountDashboardProps> = ({
     onEditCompany,
     onRegisterCompany,
     onLogout,
-    onAdminAction
+    onAdminAction,
+    collection,
+    onViewPlant,
+    showCollections,
+    setShowCollections
 }) => {
     const [showReceipt, setShowReceipt] = useState(false);
     const [showQRCode, setShowQRCode] = useState(false);
@@ -28,6 +37,15 @@ const AccountDashboard: React.FC<AccountDashboardProps> = ({
     const [submitting, setSubmitting] = useState(false);
     const [ticketSent, setTicketSent] = useState(false);
     const [stats, setStats] = useState({ views: 0, leads: 0 });
+    const [showSecurity, setShowSecurity] = useState(false);
+    const [updatingUser, setUpdatingUser] = useState(false);
+    const [securityForm, setSecurityForm] = useState({
+        name: user.name,
+        email: user.email, // Email change is more complex in Supabase, focusing on name and password for now
+        oldPassword: '',
+        newPassword: '',
+        confirmPassword: ''
+    });
 
     useEffect(() => {
         if (company?.id) {
@@ -42,6 +60,44 @@ const AccountDashboard: React.FC<AccountDashboardProps> = ({
     const handleWhatsAppShare = () => {
         const message = `Olá! Conheça a minha empresa no diretório oficial Agro Data: ${publicUrl}`;
         window.open(`https://wa.me/?text=${encodeURIComponent(message)}`, '_blank');
+    };
+
+    const handleUpdateProfile = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setUpdatingUser(true);
+        try {
+            const { error } = await supabase.auth.updateUser({
+                data: { full_name: securityForm.name }
+            });
+            if (error) throw error;
+            alert('Perfil atualizado com sucesso!');
+        } catch (err: any) {
+            alert('Erro ao atualizar perfil: ' + err.message);
+        } finally {
+            setUpdatingUser(false);
+        }
+    };
+
+    const handleUpdatePassword = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (securityForm.newPassword !== securityForm.confirmPassword) {
+            alert('As novas senhas não coincidem!');
+            return;
+        }
+
+        setUpdatingUser(true);
+        try {
+            const { error } = await supabase.auth.updateUser({
+                password: securityForm.newPassword
+            });
+            if (error) throw error;
+            alert('Senha atualizada com sucesso!');
+            setSecurityForm(prev => ({ ...prev, newPassword: '', confirmPassword: '' }));
+        } catch (err: any) {
+            alert('Erro ao atualizar senha: ' + err.message);
+        } finally {
+            setUpdatingUser(false);
+        }
     };
 
     const handleSubmitTicket = async (e: React.FormEvent) => {
@@ -108,18 +164,26 @@ const AccountDashboard: React.FC<AccountDashboardProps> = ({
                     {company ? (
                         <div className="space-y-4">
                             {/* Company Card Mini */}
-                            <div className="bg-white dark:bg-slate-800 p-4 rounded-lg border border-slate-100 dark:border-slate-700 shadow-sm flex items-center gap-4">
-                                <img src={company.logo || 'https://via.placeholder.com/150'} className="w-14 h-14 rounded-lg object-cover border border-slate-50 dark:border-slate-700" />
-                                <div className="flex-1 min-w-0">
-                                    <div className="flex items-center gap-1.5 min-w-0">
+                            <div className="bg-white dark:bg-slate-800 p-4 rounded-[12px] border border-slate-100 dark:border-slate-700 shadow-sm flex items-center gap-4">
+                                <img src={company.logo || 'https://via.placeholder.com/150'} className="w-14 h-14 rounded-[12px] object-cover border border-slate-50 dark:border-slate-700" />
+                                <div className="flex-1 min-w-0 flex flex-col justify-center">
+                                    <div className="flex items-center gap-1.5 min-w-0 mb-1">
                                         <h4 className="font-bold text-[#1e293b] dark:text-slate-200 truncate uppercase text-xs">{company.name}</h4>
                                         {company.isVerified && <i className="fa-solid fa-circle-check text-emerald-500 text-[10px]"></i>}
+                                        <div className="flex items-center gap-1.5 ml-2 border-l border-slate-100 dark:border-slate-700 pl-2 shrink-0">
+                                            <div
+                                                className={`w-2 h-2 rounded-full ${company.isFeatured ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]' : 'bg-slate-300 dark:bg-slate-600'}`}
+                                            />
+                                            <span className={`text-[8px] font-black uppercase tracking-tight ${company.isFeatured ? 'text-emerald-600 dark:text-emerald-500' : 'text-slate-400 dark:text-slate-500'}`}>
+                                                {company.isFeatured ? 'Visível no Mercado' : 'Oculto no Mercado'}
+                                            </span>
+                                        </div>
                                     </div>
                                     <p className="text-[10px] text-emerald-600 dark:text-emerald-500 font-bold">Plano {company.plan}</p>
                                 </div>
                                 <button
                                     onClick={onEditCompany}
-                                    className="w-10 h-10 bg-slate-50 dark:bg-slate-700/50 rounded-lg flex items-center justify-center text-slate-400 hover:text-orange-500 transition-colors"
+                                    className="w-10 h-10 bg-slate-50 dark:bg-slate-700/50 rounded-[12px] flex items-center justify-center text-slate-400 hover:text-orange-500 transition-colors border border-slate-100 dark:border-slate-600"
                                 >
                                     <i className="fa-solid fa-pen-to-square"></i>
                                 </button>
@@ -129,170 +193,25 @@ const AccountDashboard: React.FC<AccountDashboardProps> = ({
                             <div className="grid grid-cols-2 gap-3">
                                 <button
                                     onClick={() => setShowReceipt(true)}
-                                    className="bg-white dark:bg-slate-800 p-4 rounded-lg border border-slate-100 dark:border-slate-700 shadow-sm flex flex-col items-center gap-3 group active:scale-95 transition-all"
+                                    className="bg-white dark:bg-slate-800 p-4 rounded-[12px] border border-slate-100 dark:border-slate-700 shadow-sm flex flex-col items-center gap-3 group active:scale-95 transition-all"
                                 >
-                                    <div className="w-10 h-10 bg-orange-50 dark:bg-orange-900/20 text-orange-500 rounded-lg flex items-center justify-center text-sm group-hover:bg-orange-500 group-hover:text-white transition-all">
+                                    <div className="w-10 h-10 bg-orange-50 dark:bg-orange-900/20 text-orange-500 rounded-[12px] flex items-center justify-center text-sm group-hover:bg-orange-500 group-hover:text-white transition-all">
                                         <i className="fa-solid fa-receipt"></i>
                                     </div>
-                                    <span className="text-[10px] font-black text-slate-700 dark:text-slate-100 uppercase">Factura / Recibo</span>
+                                    <span className="text-[10px] font-black text-slate-700 dark:text-slate-100 uppercase">Facturação</span>
                                 </button>
 
-                                <div className={`p-4 rounded-lg border shadow-sm flex flex-col items-center gap-3 ${company.isFeatured ? 'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-100 dark:border-emerald-800' : 'bg-slate-50 dark:bg-slate-800/20 border-slate-100 dark:border-slate-800 opacity-80'}`}>
-                                    <div className={`w-10 h-10 rounded-lg flex items-center justify-center text-sm ${company.isFeatured ? 'bg-emerald-500 text-white' : 'bg-slate-200 dark:bg-slate-700 text-slate-400 dark:text-slate-600'}`}>
-                                        <i className={`fa-solid ${company.isFeatured ? 'fa-eye' : 'fa-eye-slash'}`}></i>
+                                <button
+                                    onClick={() => setShowCollections(true)}
+                                    className="bg-white dark:bg-slate-800 p-4 rounded-[12px] border border-slate-100 dark:border-slate-700 shadow-sm flex flex-col items-center gap-3 group active:scale-95 transition-all"
+                                >
+                                    <div className="w-10 h-10 bg-green-50 dark:bg-green-900/20 text-green-600 rounded-[12px] flex items-center justify-center text-sm group-hover:bg-green-600 group-hover:text-white transition-all">
+                                        <i className="fa-solid fa-leaf"></i>
                                     </div>
-                                    <div className="text-center">
-                                        <span className={`text-[10px] font-black uppercase ${company.isFeatured ? 'text-emerald-700 dark:text-emerald-400' : 'text-slate-500 dark:text-slate-400'}`}>
-                                            {company.isFeatured ? 'Público' : 'Privado'}
-                                        </span>
-                                        <p className="text-[8px] font-bold text-slate-400">
-                                            {company.isFeatured ? 'Visível no Mercado' : 'Invisível no Mercado'}
-                                        </p>
-                                    </div>
-                                </div>
+                                    <span className="text-[10px] font-black text-slate-700 dark:text-slate-100 uppercase">Minhas Colecções</span>
+                                </button>
                             </div>
 
-                            {/* Verification & Visibility Info */}
-                            <div className={`p-5 rounded-lg text-white shadow-lg relative overflow-hidden ${company.isFeatured ? 'bg-emerald-500 shadow-emerald-100 dark:shadow-none' : 'bg-slate-700 shadow-slate-200 dark:shadow-none'}`}>
-                                <i className={`fa-solid ${company.isFeatured ? 'fa-shield-check' : 'fa-lock'} absolute -right-4 -bottom-4 text-white/10 text-6xl`}></i>
-                                <div className="relative z-10 flex items-center gap-3">
-                                    <i className={`fa-solid ${company.isFeatured ? 'fa-circle-check' : 'fa-circle-info'} text-xl`}></i>
-                                    <div>
-                                        <p className="text-[11px] font-black uppercase tracking-wider">
-                                            {company.isFeatured ? 'Conta Publicada' : 'Aguardando Destaque'}
-                                        </p>
-                                        <p className="text-[9px] font-bold opacity-80">
-                                            {company.isFeatured
-                                                ? 'Sua empresa está em destaque no mercado nacional.'
-                                                : 'Sua empresa é visível apenas para si. Pague a taxa ou mude de plano para publicar.'}
-                                        </p>
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* Performance & Impact Dashboard */}
-                            <div className="bg-slate-900 rounded-lg p-6 space-y-6 shadow-xl shadow-slate-200 dark:shadow-none relative overflow-hidden">
-                                {/* Decorative elements */}
-                                <div className="absolute -top-10 -right-10 w-32 h-32 bg-emerald-500/10 rounded-full blur-3xl"></div>
-                                <div className="absolute -bottom-10 -left-10 w-32 h-32 bg-orange-500/10 rounded-full blur-3xl"></div>
-
-                                <div className="flex items-center justify-between relative">
-                                    <div className="space-y-1">
-                                        <h4 className="text-[10px] font-black text-emerald-400 uppercase tracking-[0.2em]">Painel de Performance</h4>
-                                        <p className="text-[14px] font-bold text-white leading-tight">Impacto do seu Negócio</p>
-                                    </div>
-                                    <div className="bg-emerald-500/20 px-3 py-1 rounded-full border border-emerald-500/30">
-                                        <span className="text-[9px] font-black text-emerald-400 uppercase tracking-widest animate-pulse">Live</span>
-                                    </div>
-                                </div>
-
-                                <div className="grid grid-cols-2 gap-3 relative">
-                                    <div className="bg-white/5 backdrop-blur-md border border-white/10 p-4 rounded-lg space-y-1">
-                                        <div className="flex items-center gap-2 text-slate-400 mb-1">
-                                            <i className="fa-solid fa-eye text-[10px]"></i>
-                                            <span className="text-[9px] font-black uppercase tracking-widest">Visitas</span>
-                                        </div>
-                                        <div className="flex items-baseline gap-2">
-                                            <span className="text-2xl font-black text-white">{stats.views}</span>
-                                            <span className="text-[10px] font-bold text-emerald-400">Total</span>
-                                        </div>
-                                    </div>
-                                    <div className="bg-white/5 backdrop-blur-md border border-white/10 p-4 rounded-lg space-y-1">
-                                        <div className="flex items-center gap-2 text-slate-400 mb-1">
-                                            <i className="fa-brands fa-whatsapp text-[10px]"></i>
-                                            <span className="text-[9px] font-black uppercase tracking-widest">Leads</span>
-                                        </div>
-                                        <div className="flex items-baseline gap-2">
-                                            <span className="text-2xl font-black text-white">{stats.leads}</span>
-                                            <span className="text-[10px] font-bold text-emerald-400">Mensagens</span>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div className="bg-white/5 backdrop-blur-md border border-white/10 p-4 rounded-lg flex items-center justify-between relative">
-                                    <div className="flex items-center gap-3">
-                                        <div className="w-10 h-10 bg-orange-500/20 rounded-lg flex items-center justify-center text-orange-500">
-                                            <i className="fa-brands fa-google text-lg"></i>
-                                        </div>
-                                        <div>
-                                            <p className="text-[10px] font-black text-white uppercase tracking-widest">Status no Google</p>
-                                            <p className="text-[11px] text-slate-400 font-medium">Indexação em curso...</p>
-                                        </div>
-                                    </div>
-                                    <div className="flex gap-1">
-                                        <div className="w-1.5 h-1.5 bg-orange-500 rounded-full animate-bounce"></div>
-                                        <div className="w-1.5 h-1.5 bg-orange-500 rounded-full animate-bounce [animation-delay:-0.15s]"></div>
-                                        <div className="w-1.5 h-1.5 bg-orange-500 rounded-full animate-bounce [animation-delay:-0.3s]"></div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* Google & Share Link */}
-                            <div className="bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-700 p-4 rounded-lg space-y-3">
-                                <div className="flex items-center justify-between">
-                                    <h4 className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Identidade Digital (SEO)</h4>
-                                    <div className="flex gap-2 text-slate-300">
-                                        <i className="fa-brands fa-google text-[10px]"></i>
-                                        <i className="fa-brands fa-whatsapp text-[10px]"></i>
-                                    </div>
-                                </div>
-
-                                <div className="bg-white dark:bg-slate-900 p-3 rounded-lg border border-slate-100 dark:border-slate-800 space-y-3 text-slate-900 dark:text-slate-100">
-                                    <div className="flex items-center gap-2 overflow-hidden">
-                                        <span className="text-[10px] text-slate-500 font-medium truncate flex-1 opacity-70">
-                                            agrodata.co.mz/directory/{company.slug || 'gerando...'}
-                                        </span>
-                                        <div className="flex gap-1">
-                                            <button
-                                                onClick={() => {
-                                                    navigator.clipboard.writeText(publicUrl);
-                                                    alert('Link copiado!');
-                                                }}
-                                                className="w-8 h-8 bg-slate-50 dark:bg-slate-800 text-slate-400 dark:text-slate-500 rounded-lg flex items-center justify-center text-[10px] hover:bg-emerald-50 dark:hover:bg-emerald-900/40 hover:text-emerald-600 transition-all"
-                                                title="Copiar Link"
-                                            >
-                                                <i className="fa-solid fa-copy"></i>
-                                            </button>
-                                            <button
-                                                onClick={handleWhatsAppShare}
-                                                className="w-8 h-8 bg-emerald-50 text-emerald-600 rounded-lg flex items-center justify-center text-[10px] hover:bg-emerald-500 hover:text-white transition-all"
-                                                title="Partilhar no WhatsApp"
-                                            >
-                                                <i className="fa-brands fa-whatsapp"></i>
-                                            </button>
-                                        </div>
-                                    </div>
-
-                                    <button
-                                        onClick={() => setShowQRCode(true)}
-                                        className="w-full py-2.5 bg-slate-900 text-white rounded-lg text-[9px] font-black uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-orange-500 active:scale-95 transition-all"
-                                    >
-                                        <i className="fa-solid fa-qrcode text-xs"></i>
-                                        Ver QR Code do Negócio
-                                    </button>
-                                </div>
-                                <p className="text-[8px] text-slate-400 dark:text-slate-500 font-bold leading-relaxed px-1">
-                                    Use este link e o QR Code no seu material de marketing para que o Google e clientes encontrem a sua empresa mais rápido.
-                                </p>
-                            </div>
-
-                            {/* Verification & Visibility Info */}
-                            <div className={`p-5 rounded-lg text-white shadow-lg relative overflow-hidden ${company.isFeatured ? 'bg-emerald-500 shadow-emerald-100 dark:shadow-none' : 'bg-slate-700 shadow-slate-200 dark:shadow-none'}`}>
-                                <i className={`fa-solid ${company.isFeatured ? 'fa-shield-check' : 'fa-lock'} absolute -right-4 -bottom-4 text-white/10 text-6xl`}></i>
-                                <div className="relative z-10 flex items-center gap-3">
-                                    <i className={`fa-solid ${company.isFeatured ? 'fa-circle-check' : 'fa-circle-info'} text-xl`}></i>
-                                    <div>
-                                        <p className="text-[11px] font-black uppercase tracking-wider">
-                                            {company.isFeatured ? 'Conta Publicada' : 'Aguardando Destaque'}
-                                        </p>
-                                        <p className="text-[9px] font-bold opacity-80">
-                                            {company.isFeatured
-                                                ? 'Sua empresa está em destaque no mercado nacional.'
-                                                : 'Sua empresa é visível apenas para si. Pague a taxa ou mude de plano para publicar.'}
-                                        </p>
-                                    </div>
-                                </div>
-                            </div>
 
                             {/* Product List Section */}
                             <div className="space-y-3">
@@ -349,13 +268,97 @@ const AccountDashboard: React.FC<AccountDashboardProps> = ({
                 <div className="pt-6 space-y-3">
                     <h3 className="text-[10px] font-black uppercase text-slate-400 dark:text-slate-600 tracking-widest ml-1">Outras Definições</h3>
                     <div className="bg-white dark:bg-slate-800 rounded-lg border border-slate-100 dark:border-slate-700 overflow-hidden">
-                        <button className="w-full p-4 flex items-center justify-between hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors border-b border-slate-50 dark:border-slate-700 text-left">
+                        <button
+                            onClick={() => setShowSecurity(!showSecurity)}
+                            className="w-full p-4 flex items-center justify-between hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors border-b border-slate-50 dark:border-slate-700 text-left"
+                        >
                             <div className="flex items-center gap-3">
                                 <i className="fa-solid fa-user-shield text-slate-300 dark:text-slate-600"></i>
                                 <span className="text-[11px] font-bold text-slate-700 dark:text-slate-100">Privacidade e Segurança</span>
                             </div>
-                            <i className="fa-solid fa-chevron-right text-[10px] text-slate-300 dark:text-slate-600"></i>
+                            <i className={`fa-solid ${showSecurity ? 'fa-chevron-up' : 'fa-chevron-right'} text-[10px] text-slate-300 dark:text-slate-600`}></i>
                         </button>
+
+                        {showSecurity && (
+                            <div className="p-6 bg-slate-50/50 dark:bg-slate-900/50 border-b border-slate-100 dark:border-slate-800 space-y-8 animate-in slide-in-from-top duration-300">
+                                {/* Update Profile */}
+                                <div className="space-y-4">
+                                    <div className="flex items-center gap-2">
+                                        <div className="w-1.5 h-4 bg-emerald-500 rounded-full"></div>
+                                        <h4 className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Dados Pessoais</h4>
+                                    </div>
+                                    <form onSubmit={handleUpdateProfile} className="space-y-3">
+                                        <div className="space-y-1">
+                                            <label className="text-[9px] font-black text-slate-400 uppercase ml-2">Nome Completo</label>
+                                            <input
+                                                type="text"
+                                                value={securityForm.name}
+                                                onChange={e => setSecurityForm({ ...securityForm, name: e.target.value })}
+                                                className="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-4 py-3 text-xs font-semibold focus:border-emerald-500 dark:text-slate-100 outline-none"
+                                            />
+                                        </div>
+                                        <div className="space-y-1 opacity-60">
+                                            <label className="text-[9px] font-black text-slate-400 uppercase ml-2">E-mail (Não editável)</label>
+                                            <input
+                                                disabled
+                                                type="email"
+                                                value={securityForm.email}
+                                                className="w-full bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-4 py-3 text-xs font-semibold dark:text-slate-400 outline-none cursor-not-allowed"
+                                            />
+                                        </div>
+                                        <button
+                                            type="submit"
+                                            disabled={updatingUser}
+                                            className="w-full py-3 bg-emerald-500 text-white rounded-lg text-[10px] font-black uppercase tracking-widest shadow-lg shadow-emerald-50 dark:shadow-none active:scale-95 transition-all"
+                                        >
+                                            {updatingUser ? 'A Guardar...' : 'Actualizar Dados'}
+                                        </button>
+                                    </form>
+                                </div>
+
+                                {/* Update Password */}
+                                <div className="space-y-4 pt-4 border-t border-slate-200 dark:border-slate-800">
+                                    <div className="flex items-center gap-2">
+                                        <div className="w-1.5 h-4 bg-orange-500 rounded-full"></div>
+                                        <h4 className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Segurança da Conta</h4>
+                                    </div>
+                                    <form onSubmit={handleUpdatePassword} className="space-y-3">
+                                        <div className="space-y-1">
+                                            <label className="text-[9px] font-black text-slate-400 uppercase ml-2">Nova Palavra-passe</label>
+                                            <input
+                                                required
+                                                type="password"
+                                                value={securityForm.newPassword}
+                                                onChange={e => setSecurityForm({ ...securityForm, newPassword: e.target.value })}
+                                                className="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-4 py-3 text-xs font-semibold focus:border-emerald-500 dark:text-slate-100 outline-none"
+                                                placeholder="Mínimo 6 caracteres"
+                                            />
+                                        </div>
+                                        <div className="space-y-1">
+                                            <label className="text-[9px] font-black text-slate-400 uppercase ml-2">Confirmar Nova Palavra-passe</label>
+                                            <input
+                                                required
+                                                type="password"
+                                                value={securityForm.confirmPassword}
+                                                onChange={e => setSecurityForm({ ...securityForm, confirmPassword: e.target.value })}
+                                                className="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-4 py-3 text-xs font-semibold focus:border-emerald-500 dark:text-slate-100 outline-none"
+                                            />
+                                        </div>
+                                        <button
+                                            type="submit"
+                                            disabled={updatingUser}
+                                            className="w-full py-3 bg-slate-900 dark:bg-orange-600 text-white rounded-lg text-[10px] font-black uppercase tracking-widest shadow-lg active:scale-95 transition-all"
+                                        >
+                                            {updatingUser ? 'A Processar...' : 'Alterar Palavra-passe'}
+                                        </button>
+                                    </form>
+                                    <p className="text-[8px] text-slate-400 font-bold uppercase text-center px-4">
+                                        Ao alterar a palavra-passe, certifique-se de que a memoriza para o próximo acesso.
+                                    </p>
+                                </div>
+                            </div>
+                        )}
+
                         <button
                             onClick={() => setShowSupportForm(!showSupportForm)}
                             className="w-full p-4 flex items-center justify-between hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors text-left"
@@ -550,6 +553,72 @@ const AccountDashboard: React.FC<AccountDashboardProps> = ({
                                 </button>
                             </div>
                         </div>
+                    </div>
+                </div>
+            )}
+            {/* Collections Modal/Sub-view */}
+            {showCollections && (
+                <div className="fixed inset-0 bg-white dark:bg-[#0f172a] z-[120] flex flex-col animate-in slide-in-from-right duration-300">
+                    <header className="p-6 border-b border-slate-100 dark:border-slate-800 flex items-center gap-4 bg-white dark:bg-slate-900 sticky top-0 z-10">
+                        <button
+                            onClick={() => setShowCollections(false)}
+                            className="w-10 h-10 rounded-[12px] bg-slate-50 dark:bg-slate-800 flex items-center justify-center text-slate-400 hover:text-emerald-600 transition-all border border-slate-100 dark:border-slate-700 active:scale-90"
+                        >
+                            <i className="fa-solid fa-arrow-left"></i>
+                        </button>
+                        <div>
+                            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-0.5">Diagnósticos</span>
+                            <h3 className="text-lg font-black text-slate-800 dark:text-slate-100 uppercase tracking-tight">Minhas Colecções</h3>
+                        </div>
+                    </header>
+
+                    <div className="flex-1 overflow-y-auto p-6 space-y-4 pb-12">
+                        {collection.length > 0 ? (
+                            <div className="grid grid-cols-1 gap-4">
+                                {collection.map((plant, idx) => (
+                                    <div
+                                        key={idx}
+                                        onClick={() => {
+                                            onViewPlant(plant);
+                                            setShowCollections(false);
+                                        }}
+                                        className="bg-white dark:bg-slate-800 p-4 rounded-[12px] border border-slate-100 dark:border-slate-700 shadow-sm flex items-center gap-4 hover:border-emerald-500 transition-all active:scale-[0.98] group cursor-pointer"
+                                    >
+                                        <div className="w-16 h-16 rounded-[12px] bg-slate-50 dark:bg-slate-900 overflow-hidden shrink-0 border border-slate-100 dark:border-slate-700">
+                                            <img src={plant.image_url || plant.image} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt={plant.common_name || plant.name} />
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                            <h4 className="text-sm font-black text-slate-800 dark:text-slate-100 truncate uppercase tracking-tight">{plant.customName || plant.common_name || plant.name}</h4>
+                                            <p className="text-[10px] text-emerald-600 dark:text-emerald-500 font-bold uppercase tracking-tight">{plant.scientific_name || 'Espécie Desconhecida'}</p>
+                                            <div className="flex items-center gap-1 mt-1">
+                                                <i className="fa-solid fa-calendar-day text-[9px] text-slate-300"></i>
+                                                <span className="text-[9px] text-slate-400 dark:text-slate-500 font-bold uppercase">{new Date(plant.id).toLocaleDateString() || 'Recent'}</span>
+                                            </div>
+                                        </div>
+                                        <i className="fa-solid fa-chevron-right text-slate-200 dark:text-slate-700 text-xs"></i>
+                                    </div>
+                                ))}
+                            </div>
+                        ) : (
+                            <div className="py-20 flex flex-col items-center justify-center text-center space-y-6">
+                                <div className="w-24 h-24 bg-slate-50 dark:bg-slate-800/50 rounded-[2.5rem] flex items-center justify-center">
+                                    <i className="fa-solid fa-leaf text-slate-200 dark:text-slate-700 text-5xl"></i>
+                                </div>
+                                <div className="space-y-2">
+                                    <h4 className="text-lg font-black text-slate-800 dark:text-slate-100 uppercase tracking-tight">Colecção Vazia</h4>
+                                    <p className="text-xs text-slate-400 dark:text-slate-500 font-medium px-10">Você ainda não identificou nenhuma planta. Use o scanner para começar a sua biblioteca.</p>
+                                </div>
+                                <button
+                                    onClick={() => {
+                                        setShowCollections(false);
+                                        // Tab change handled by parent via AppTab
+                                    }}
+                                    className="px-8 py-4 bg-emerald-500 text-white rounded-[12px] text-[10px] font-black uppercase tracking-widest shadow-lg shadow-emerald-100 dark:shadow-none active:scale-95 transition-all"
+                                >
+                                    Abrir Scanner
+                                </button>
+                            </div>
+                        )}
                     </div>
                 </div>
             )}

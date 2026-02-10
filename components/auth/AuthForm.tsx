@@ -97,13 +97,13 @@ const AuthForm: React.FC<AuthFormProps> = ({ onAuth, onNavigate, onAlert }) => {
                 onClick={() => onNavigate(AppTab.SCAN)}
                 className="mb-10 flex flex-col items-center gap-2 text-slate-400 dark:text-slate-500 hover:text-orange-500 transition-colors group w-full"
             >
-                <div className="w-12 h-12 bg-white dark:bg-slate-800 rounded-[10px] flex items-center justify-center border border-slate-100 dark:border-slate-700 shadow-sm group-hover:shadow-md transition-all">
+                <div className="w-12 h-12 bg-white dark:bg-slate-800 rounded-[12px] flex items-center justify-center border border-slate-100 dark:border-slate-700 shadow-sm group-hover:shadow-md transition-all">
                     <i className="fa-solid fa-arrow-left"></i>
                 </div>
                 <span className="text-[10px] font-black uppercase tracking-widest text-center">Voltar ao Scanner</span>
             </button>
 
-            <div className="bg-white/50 dark:bg-slate-900/50 p-6 rounded-[8px] border border-slate-900/[0.05] dark:border-slate-800 backdrop-blur-[2px]">
+            <div className="bg-white/50 dark:bg-slate-900/50 p-6 rounded-[12px] border border-slate-900/[0.05] dark:border-slate-800 backdrop-blur-[2px]">
                 <h2 className="text-2xl font-black text-[#1e293b] dark:text-slate-100 mb-2 text-center">
                     {isRegistering ? 'Criar Nova Conta' : 'Acesse sua Conta'}
                 </h2>
@@ -121,7 +121,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ onAuth, onNavigate, onAlert }) => {
                                 placeholder="Nome completo"
                                 value={fullName}
                                 onChange={e => setFullName(e.target.value)}
-                                className="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[8px] px-4 py-3 text-xs font-semibold focus:border-emerald-500 dark:text-slate-100 transition-all outline-none"
+                                className="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[12px] px-4 py-3 text-xs font-semibold focus:border-emerald-500 dark:text-slate-100 transition-all outline-none"
                             />
                         </div>
                     )}
@@ -133,7 +133,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ onAuth, onNavigate, onAlert }) => {
                             placeholder="Seu email"
                             value={email}
                             onChange={e => setEmail(e.target.value)}
-                            className="w-full bg-white/90 dark:bg-slate-800/90 border border-slate-200 dark:border-slate-700 p-3 pl-11 rounded-[8px] outline-none text-xs focus:border-emerald-400 dark:text-slate-100 transition-all shadow-sm"
+                            className="w-full bg-white/90 dark:bg-slate-800/90 border border-slate-200 dark:border-slate-700 p-3 pl-11 rounded-[12px] outline-none text-xs focus:border-emerald-400 dark:text-slate-100 transition-all shadow-sm"
                         />
                     </div>
                     <div className="relative">
@@ -144,7 +144,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ onAuth, onNavigate, onAlert }) => {
                             placeholder="Sua senha"
                             value={password}
                             onChange={e => setPassword(e.target.value)}
-                            className="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-3 pl-11 pr-11 rounded-[8px] outline-none text-xs focus:border-emerald-400 dark:text-slate-100 transition-all shadow-sm"
+                            className="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-3 pl-11 pr-11 rounded-[12px] outline-none text-xs focus:border-emerald-400 dark:text-slate-100 transition-all shadow-sm"
                         />
                         <button
                             type="button"
@@ -169,7 +169,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ onAuth, onNavigate, onAlert }) => {
                     <button
                         type="submit"
                         disabled={loading}
-                        className="w-full bg-[#059669] hover:bg-[#047857] text-white py-4 rounded-[8px] text-[11px] font-black uppercase tracking-widest shadow-lg shadow-emerald-100 dark:shadow-none transition-all active:scale-95 disabled:opacity-50 mt-2"
+                        className="w-full bg-[#059669] hover:bg-[#047857] text-white py-4 rounded-[12px] text-[11px] font-black uppercase tracking-widest shadow-lg shadow-emerald-100 dark:shadow-none transition-all active:scale-95 disabled:opacity-50 mt-2"
                     >
                         {loading ? 'A PROCESSAR...' : (isRegistering ? 'FINALIZAR REGISTO' : 'ENTRAR AGORA')}
                     </button>

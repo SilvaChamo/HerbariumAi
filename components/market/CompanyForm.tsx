@@ -156,10 +156,10 @@ const CompanyForm: React.FC<CompanyFormProps> = ({ initialData, onSubmit, onClos
             </div>
 
             {/* Registration Animated Tabs */}
-            <div className="relative bg-slate-100/50 dark:bg-slate-800/50 p-1.5 rounded-[8px] flex gap-1 h-12 overflow-hidden">
+            <div className="relative bg-slate-100/50 dark:bg-slate-800/50 p-1.5 rounded-[12px] flex gap-1 h-12 overflow-hidden">
                 {/* Sliding Background */}
                 <div
-                    className={`absolute inset-y-1.5 w-[calc(50%-6px)] bg-orange-500/10 border border-orange-500 rounded-lg transition-all duration-300 ease-out z-0`}
+                    className={`absolute inset-y-1.5 w-[calc(50%-6px)] bg-orange-500/10 border border-orange-500 rounded-[12px] transition-all duration-300 ease-out z-0`}
                     style={{
                         transform: `translateX(${isEnterprise ? '0' : '100%'})`,
                         left: isEnterprise ? '6px' : '0px'
@@ -169,7 +169,7 @@ const CompanyForm: React.FC<CompanyFormProps> = ({ initialData, onSubmit, onClos
                 <button
                     type="button"
                     onClick={() => setFormData({ ...formData, registrationType: 'enterprise' })}
-                    className={`relative flex-1 rounded-lg text-[10px] font-black uppercase transition-colors duration-300 z-10 flex items-center justify-center gap-2 ${isEnterprise ? 'text-orange-600' : 'text-emerald-700 hover:text-orange-500'}`}
+                    className={`relative flex-1 rounded-[12px] text-[10px] font-black uppercase transition-colors duration-300 z-10 flex items-center justify-center gap-2 ${isEnterprise ? 'text-orange-600' : 'text-emerald-700 hover:text-orange-500'}`}
                 >
                     <i className="fa-solid fa-building text-xs"></i>
                     Empresa
@@ -177,7 +177,7 @@ const CompanyForm: React.FC<CompanyFormProps> = ({ initialData, onSubmit, onClos
                 <button
                     type="button"
                     onClick={() => onSwitchToProfessional?.()}
-                    className={`relative flex-1 rounded-lg text-[10px] font-black uppercase transition-colors duration-300 z-10 flex items-center justify-center gap-2 ${!isEnterprise ? 'text-orange-600' : 'text-emerald-700 hover:text-orange-500'}`}
+                    className={`relative flex-1 rounded-[12px] text-[10px] font-black uppercase transition-colors duration-300 z-10 flex items-center justify-center gap-2 ${!isEnterprise ? 'text-orange-600' : 'text-emerald-700 hover:text-orange-500'}`}
                 >
                     <i className="fa-solid fa-user-tie text-xs"></i>
                     Profissional
@@ -193,7 +193,7 @@ const CompanyForm: React.FC<CompanyFormProps> = ({ initialData, onSubmit, onClos
                         type="text"
                         value={formData.name}
                         onChange={e => setFormData({ ...formData, name: e.target.value })}
-                        className="w-full bg-white dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/50 p-2.5 pl-11 rounded-lg text-[12px] text-slate-700 dark:text-slate-100 focus:border-emerald-400 outline-none transition-all shadow-sm placeholder:text-slate-400 dark:placeholder:text-slate-600"
+                        className="w-full bg-white dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/50 p-2.5 pl-11 rounded-[12px] text-[12px] text-slate-700 dark:text-slate-100 focus:border-emerald-400 outline-none transition-all shadow-sm placeholder:text-slate-400 dark:placeholder:text-slate-600"
                         placeholder={isEnterprise ? "Nome da Empresa / Entidade" : "Nome Completo do Profissional"}
                     />
                 </div>
@@ -201,7 +201,7 @@ const CompanyForm: React.FC<CompanyFormProps> = ({ initialData, onSubmit, onClos
                 {/* Grid Logo (L) + Inputs (R) */}
                 <div className="grid grid-cols-[110px_1fr] gap-3">
                     <div className="relative h-full">
-                        <label className="flex flex-col items-center justify-center w-full h-full bg-white dark:bg-slate-800/50 border border-dashed border-slate-200 dark:border-slate-700/50 rounded-lg cursor-pointer hover:border-orange-400 hover:bg-orange-950/20 transition-all overflow-hidden">
+                        <label className="flex flex-col items-center justify-center w-full h-full bg-white dark:bg-slate-800/50 border border-dashed border-slate-200 dark:border-slate-700/50 rounded-[12px] cursor-pointer hover:border-orange-400 hover:bg-orange-950/20 transition-all overflow-hidden">
                             {formData.logo ? (
                                 <img src={formData.logo} className="w-full h-full object-cover" />
                             ) : (
@@ -253,7 +253,7 @@ const CompanyForm: React.FC<CompanyFormProps> = ({ initialData, onSubmit, onClos
                     <div className="space-y-3">
                         <div className="relative">
                             <i className="fa-solid fa-phone absolute left-3 top-1/2 -translate-y-1/2 text-slate-300 dark:text-slate-600 text-[11px]"></i>
-                            <input required type="tel" value={formData.contact} onChange={e => setFormData({ ...formData, contact: e.target.value })} className="w-full bg-white dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/50 p-2.5 pl-9 rounded-lg text-[12px] dark:text-slate-100 focus:border-emerald-400 outline-none transition-all placeholder:text-slate-400 dark:placeholder:text-slate-600" placeholder="Telemóvel" />
+                            <input required type="tel" value={formData.contact} onChange={e => setFormData({ ...formData, contact: e.target.value })} className="w-full bg-white dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/50 p-2.5 pl-9 rounded-[12px] text-[12px] dark:text-slate-100 focus:border-emerald-400 outline-none transition-all placeholder:text-slate-400 dark:placeholder:text-slate-600" placeholder="Telemóvel" />
                         </div>
                         <div className="relative">
                             <i className={`fa-solid ${isEnterprise ? 'fa-link' : 'fa-graduation-cap'} absolute left-3 top-1/2 -translate-y-1/2 text-slate-300 dark:text-slate-600 text-[11px]`}></i>
@@ -261,7 +261,7 @@ const CompanyForm: React.FC<CompanyFormProps> = ({ initialData, onSubmit, onClos
                                 required
                                 value={formData.valueChain}
                                 onChange={e => setFormData({ ...formData, valueChain: e.target.value as any })}
-                                className="w-full bg-white dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/50 p-2.5 pl-9 rounded-lg text-[12px] dark:text-slate-100 outline-none appearance-none focus:border-emerald-400 transition-all pr-8"
+                                className="w-full bg-white dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/50 p-2.5 pl-9 rounded-[12px] text-[12px] dark:text-slate-100 outline-none appearance-none focus:border-emerald-400 transition-all pr-8"
                             >
                                 {isEnterprise ? (
                                     <>
@@ -295,12 +295,12 @@ const CompanyForm: React.FC<CompanyFormProps> = ({ initialData, onSubmit, onClos
                 <div className="space-y-3">
                     <div className="relative">
                         <i className="fa-solid fa-envelope absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-300 dark:text-slate-600 text-sm"></i>
-                        <input required type="email" value={formData.email} onChange={e => setFormData({ ...formData, email: e.target.value })} className="w-full bg-white dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/50 p-2.5 pl-11 rounded-lg text-[12px] dark:text-slate-100 focus:border-emerald-400 outline-none transition-all shadow-sm placeholder:text-slate-400 dark:placeholder:text-slate-600" placeholder="E-mail" />
+                        <input required type="email" value={formData.email} onChange={e => setFormData({ ...formData, email: e.target.value })} className="w-full bg-white dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/50 p-2.5 pl-11 rounded-[12px] text-[12px] dark:text-slate-100 focus:border-emerald-400 outline-none transition-all shadow-sm placeholder:text-slate-400 dark:placeholder:text-slate-600" placeholder="E-mail" />
                     </div>
 
                     <div className="relative">
                         <i className="fa-solid fa-location-arrow absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-300 dark:text-slate-600 text-sm"></i>
-                        <input type="text" value={formData.geoLocation} onChange={e => setFormData({ ...formData, geoLocation: e.target.value })} className="w-full bg-white dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/50 p-2.5 pl-11 rounded-lg text-[12px] dark:text-slate-100 focus:border-emerald-400 outline-none transition-all shadow-sm placeholder:text-slate-400 dark:placeholder:text-slate-600" placeholder="Endereço" />
+                        <input type="text" value={formData.geoLocation} onChange={e => setFormData({ ...formData, geoLocation: e.target.value })} className="w-full bg-white dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/50 p-2.5 pl-11 rounded-[12px] text-[12px] dark:text-slate-100 focus:border-emerald-400 outline-none transition-all shadow-sm placeholder:text-slate-400 dark:placeholder:text-slate-600" placeholder="Endereço" />
                     </div>
 
                     <div className="relative">
@@ -309,7 +309,7 @@ const CompanyForm: React.FC<CompanyFormProps> = ({ initialData, onSubmit, onClos
                             required
                             value={formData.location}
                             onChange={e => setFormData({ ...formData, location: e.target.value })}
-                            className="w-full bg-white dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/50 p-2.5 pl-11 rounded-lg text-[12px] dark:text-slate-100 outline-none appearance-none focus:border-emerald-400 transition-all pr-8 shadow-sm"
+                            className="w-full bg-white dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/50 p-2.5 pl-11 rounded-[12px] text-[12px] dark:text-slate-100 outline-none appearance-none focus:border-emerald-400 transition-all pr-8 shadow-sm"
                         >
                             <option value="" disabled>Província</option>
                             <option value="Niassa">Niassa</option>
@@ -334,20 +334,20 @@ const CompanyForm: React.FC<CompanyFormProps> = ({ initialData, onSubmit, onClos
                             type="text"
                             value={formData.activity}
                             onChange={e => setFormData({ ...formData, activity: e.target.value })}
-                            className="w-full bg-white dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/50 p-2.5 pl-11 rounded-lg text-[12px] text-emerald-700 dark:text-emerald-400 focus:border-emerald-400 outline-none transition-all shadow-sm placeholder:text-slate-400 dark:placeholder:text-slate-600"
+                            className="w-full bg-white dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/50 p-2.5 pl-11 rounded-[12px] text-[12px] text-emerald-700 dark:text-emerald-400 focus:border-emerald-400 outline-none transition-all shadow-sm placeholder:text-slate-400 dark:placeholder:text-slate-600"
                             placeholder={isEnterprise ? "Actividade Principal (Ex: Revenda de Sementes)" : "Especialidade Principal (Ex: Agrónomo)"}
                         />
                     </div>
 
                     <div className="relative">
-                        <textarea rows={3} value={formData.fullDescription} onChange={e => setFormData({ ...formData, fullDescription: e.target.value })} className="w-full bg-white dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/50 p-3 pt-3 rounded-lg text-[12px] dark:text-slate-100 focus:border-emerald-400 outline-none transition-all placeholder:text-slate-400 dark:placeholder:text-slate-600" placeholder={isEnterprise ? "Descrição da empresa..." : "Sobre o profissional..."} />
+                        <textarea rows={3} value={formData.fullDescription} onChange={e => setFormData({ ...formData, fullDescription: e.target.value })} className="w-full bg-white dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/50 p-3 pt-3 rounded-[12px] text-[12px] dark:text-slate-100 focus:border-emerald-400 outline-none transition-all placeholder:text-slate-400 dark:placeholder:text-slate-600" placeholder={isEnterprise ? "Descrição da empresa..." : "Sobre o profissional..."} />
                     </div>
                 </div>
 
                 {/* Services Section */}
                 <div className="space-y-3 pt-3">
                     <div className="flex items-center gap-2 px-1">
-                        <div className="w-8 h-8 bg-emerald-50 text-emerald-600 rounded-lg flex items-center justify-center">
+                        <div className="w-8 h-8 bg-emerald-50 text-emerald-600 rounded-[12px] flex items-center justify-center">
                             <i className="fa-solid fa-handshake-angle text-xs"></i>
                         </div>
                         <p className="text-[10px] font-black text-[#1e293b] dark:text-slate-100 uppercase tracking-widest">
@@ -359,7 +359,7 @@ const CompanyForm: React.FC<CompanyFormProps> = ({ initialData, onSubmit, onClos
                             rows={4}
                             value={formData.services}
                             onChange={e => setFormData({ ...formData, services: e.target.value })}
-                            className="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/50 p-4 rounded-lg text-[12px] dark:text-slate-100 focus:border-emerald-400 focus:bg-white dark:focus:bg-slate-800 outline-none transition-all shadow-inner placeholder:text-slate-400 dark:placeholder:text-slate-600"
+                            className="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/50 p-4 rounded-[12px] text-[12px] dark:text-slate-100 focus:border-emerald-400 focus:bg-white dark:focus:bg-slate-800 outline-none transition-all shadow-inner placeholder:text-slate-400 dark:placeholder:text-slate-600"
                             placeholder="Descreva detalhadamente o que oferece (ex: Consultoria, Venda, Aluguer...)"
                         />
                     </div>
@@ -369,7 +369,7 @@ const CompanyForm: React.FC<CompanyFormProps> = ({ initialData, onSubmit, onClos
                 <div className="space-y-4 pt-4 border-t border-slate-100">
                     <div className="flex justify-between items-center px-1">
                         <div className="flex items-center gap-2">
-                            <div className="w-8 h-8 bg-orange-50 text-orange-500 rounded-lg flex items-center justify-center">
+                            <div className="w-8 h-8 bg-orange-50 text-orange-500 rounded-[12px] flex items-center justify-center">
                                 <i className="fa-solid fa-boxes-stacked text-xs"></i>
                             </div>
                             <p className="text-[10px] font-black text-[#1e293b] dark:text-slate-100 uppercase tracking-widest">
@@ -377,13 +377,13 @@ const CompanyForm: React.FC<CompanyFormProps> = ({ initialData, onSubmit, onClos
                             </p>
                         </div>
                         {formData.plan !== 'Parceiro' && (
-                            <span className="text-[9px] font-bold text-slate-400 dark:text-slate-500 bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded-lg">
+                            <span className="text-[9px] font-bold text-slate-400 dark:text-slate-500 bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded-[12px]">
                                 {formData.products.length} / {formData.plan === 'Free' ? '0' : getProductLimit(formData.plan || 'Free')}
                             </span>
                         )}
                     </div>
                     {formData.products.map((prod, idx) => (
-                        <div key={idx} className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-3 space-y-3 animate-in fade-in duration-200">
+                        <div key={idx} className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[12px] p-3 space-y-3 animate-in fade-in duration-200">
                             {/* Product Header with Remove Button */}
                             <div className="flex justify-between items-center">
                                 <span className="text-[10px] font-black text-slate-400 uppercase">Produto #{idx + 1}</span>
@@ -398,7 +398,7 @@ const CompanyForm: React.FC<CompanyFormProps> = ({ initialData, onSubmit, onClos
 
                             {/* Product Photo */}
                             <div className="relative">
-                                <label className="flex flex-col items-center justify-center w-full h-32 bg-slate-50 dark:bg-slate-800/50 border border-dashed border-slate-200 dark:border-slate-700/50 rounded-lg cursor-pointer hover:border-orange-400 hover:bg-orange-950/20 transition-all overflow-hidden">
+                                <label className="flex flex-col items-center justify-center w-full h-32 bg-slate-50 dark:bg-slate-800/50 border border-dashed border-slate-200 dark:border-slate-700/50 rounded-[12px] cursor-pointer hover:border-orange-400 hover:bg-orange-950/20 transition-all overflow-hidden">
                                     {prod.photo ? (
                                         <img src={prod.photo} className="w-full h-full object-cover" alt="Produto" />
                                     ) : (
@@ -452,14 +452,14 @@ const CompanyForm: React.FC<CompanyFormProps> = ({ initialData, onSubmit, onClos
                                     placeholder="Nome do Produto"
                                     value={prod.name}
                                     onChange={e => updateProduct(idx, 'name', e.target.value)}
-                                    className="bg-white dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700/50 p-2.5 rounded-lg text-[10px] dark:text-slate-100 focus:border-emerald-400 outline-none placeholder:text-slate-400 dark:placeholder:text-slate-600"
+                                    className="bg-white dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700/50 p-2.5 rounded-[12px] text-[10px] dark:text-slate-100 focus:border-emerald-400 outline-none placeholder:text-slate-400 dark:placeholder:text-slate-600"
                                 />
                                 <input
                                     type="text"
                                     placeholder="Preço (MT)"
                                     value={prod.price}
                                     onChange={e => updateProduct(idx, 'price', e.target.value)}
-                                    className="bg-white dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700/50 p-2.5 rounded-lg text-[11px] text-emerald-600 dark:text-emerald-400 font-bold focus:border-emerald-400 outline-none placeholder:text-slate-400 dark:placeholder:text-slate-600"
+                                    className="bg-white dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700/50 p-2.5 rounded-[12px] text-[11px] text-emerald-600 dark:text-emerald-400 font-bold focus:border-emerald-400 outline-none placeholder:text-slate-400 dark:placeholder:text-slate-600"
                                 />
                             </div>
 
@@ -468,7 +468,7 @@ const CompanyForm: React.FC<CompanyFormProps> = ({ initialData, onSubmit, onClos
                                 placeholder="Descrição do produto..."
                                 value={prod.description}
                                 onChange={e => updateProduct(idx, 'description', e.target.value)}
-                                className="w-full bg-white dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700/50 p-2.5 rounded-lg text-[11px] dark:text-slate-100 focus:border-emerald-400 outline-none resize-none placeholder:text-slate-400 dark:placeholder:text-slate-600"
+                                className="w-full bg-white dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700/50 p-2.5 rounded-[12px] text-[11px] dark:text-slate-100 focus:border-emerald-400 outline-none resize-none placeholder:text-slate-400 dark:placeholder:text-slate-600"
                                 rows={2}
                             />
 
@@ -492,7 +492,7 @@ const CompanyForm: React.FC<CompanyFormProps> = ({ initialData, onSubmit, onClos
                     <button
                         type="button"
                         onClick={handleAddProductField}
-                        className={`w-full py-3 border border-dashed rounded-lg text-[11px] font-black uppercase transition-all ${formData.products.length >= getProductLimit(formData.plan || 'Free')
+                        className={`w-full py-3 border border-dashed rounded-[12px] text-[11px] font-black uppercase transition-all ${formData.products.length >= getProductLimit(formData.plan || 'Free')
                             ? 'border-slate-200 text-slate-300 cursor-not-allowed'
                             : 'border-slate-300 text-slate-400 hover:border-orange-400 hover:text-orange-500'
                             }`}
@@ -511,7 +511,7 @@ const CompanyForm: React.FC<CompanyFormProps> = ({ initialData, onSubmit, onClos
                                 key={period}
                                 type="button"
                                 onClick={() => { setFormData({ ...formData, billingPeriod: period }); setHasPaidPlan(false); }}
-                                className={`p-2.5 rounded-lg border text-[11px] font-bold transition-all ${formData.billingPeriod === period ? 'bg-[#1e293b] dark:bg-emerald-600 border-slate-800 dark:border-emerald-500 text-white shadow-md' : 'bg-white dark:bg-slate-800/50 border-slate-200 dark:border-slate-700/50 text-slate-500 dark:text-slate-400'}`}
+                                className={`p-2.5 rounded-[12px] border text-[11px] font-bold transition-all ${formData.billingPeriod === period ? 'bg-[#1e293b] dark:bg-emerald-600 border-slate-800 dark:border-emerald-500 text-white shadow-md' : 'bg-white dark:bg-slate-800/50 border-slate-200 dark:border-slate-700/50 text-slate-500 dark:text-slate-400'}`}
                             >
                                 {period === 'monthly' ? 'MENSAL' : 'ANUAL (-17%)'}
                             </button>
@@ -538,7 +538,7 @@ const CompanyForm: React.FC<CompanyFormProps> = ({ initialData, onSubmit, onClos
                                         setHasPaidPlan(false);
                                         if (isPartner) setHasPaidFeatured(true);
                                     }}
-                                    className={`p-2.5 rounded-lg border text-[12px] uppercase flex flex-col items-center gap-0.5 transition-all ${formData.plan === p.name ? 'bg-orange-500 border-orange-400 text-white shadow-md' : 'bg-white dark:bg-slate-800/50 border-slate-200 dark:border-slate-700/50 text-slate-500 dark:text-slate-400'}`}
+                                    className={`p-2.5 rounded-[12px] border text-[12px] uppercase flex flex-col items-center gap-0.5 transition-all ${formData.plan === p.name ? 'bg-orange-500 border-orange-400 text-white shadow-md' : 'bg-white dark:bg-slate-800/50 border-slate-200 dark:border-slate-700/50 text-slate-500 dark:text-slate-400'}`}
                                 >
                                     <span className="font-bold">{p.name}</span>
                                     <span className="opacity-70 text-[11px] font-normal">
@@ -557,7 +557,7 @@ const CompanyForm: React.FC<CompanyFormProps> = ({ initialData, onSubmit, onClos
 
                 {/* Featured (Destaque) Section */}
                 <div className="px-1">
-                    <div className="p-4 bg-orange-50 dark:bg-orange-950/20 border border-orange-100 dark:border-orange-900 rounded-lg relative overflow-hidden group">
+                    <div className="p-4 bg-orange-50 dark:bg-orange-950/20 border border-orange-100 dark:border-orange-900 rounded-[12px] relative overflow-hidden group">
                         <i className="fa-solid fa-star absolute -right-2 -top-2 text-orange-200/50 text-5xl rotate-12 transition-transform group-hover:scale-110"></i>
                         <div className="relative flex justify-between items-start">
                             <div className="space-y-1">
@@ -598,7 +598,7 @@ const CompanyForm: React.FC<CompanyFormProps> = ({ initialData, onSubmit, onClos
                 <div className="pt-4 border-t border-slate-100 dark:border-slate-800 space-y-4">
                     {/* Subscription Summary / Calculator */}
                     {formData.plan !== 'Free' && (
-                        <div className="bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/50 rounded-[8px] overflow-hidden shadow-sm">
+                        <div className="bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/50 rounded-[12px] overflow-hidden shadow-sm">
                             <div className="bg-[#1e293b] dark:bg-emerald-900/40 p-3">
                                 <h3 className="text-white text-[10px] font-black uppercase tracking-widest text-center">Resumo da Facturação</h3>
                             </div>
@@ -635,7 +635,7 @@ const CompanyForm: React.FC<CompanyFormProps> = ({ initialData, onSubmit, onClos
                                         key={m}
                                         type="button"
                                         onClick={() => setPaymentMethod(m)}
-                                        className={`flex-1 py-2 rounded-[8px] border text-[9px] font-black uppercase transition-all ${paymentMethod === m ? 'bg-emerald-500 border-emerald-400 text-white shadow-lg' : 'bg-white dark:bg-slate-800/50 border-slate-200 dark:border-slate-700/50 text-slate-400 dark:text-slate-600'}`}
+                                        className={`flex-1 py-2 rounded-[12px] border text-[9px] font-black uppercase transition-all ${paymentMethod === m ? 'bg-emerald-500 border-emerald-400 text-white shadow-lg' : 'bg-white dark:bg-slate-800/50 border-slate-200 dark:border-slate-700/50 text-slate-400 dark:text-slate-600'}`}
                                     >
                                         {m}
                                     </button>
@@ -652,7 +652,7 @@ const CompanyForm: React.FC<CompanyFormProps> = ({ initialData, onSubmit, onClos
                                             type="tel"
                                             value={paymentPhone}
                                             onChange={e => setPaymentPhone(e.target.value)}
-                                            className="w-full bg-white dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700/50 p-3 pl-11 rounded-[8px] text-xs dark:text-slate-100 focus:border-emerald-400 outline-none transition-all shadow-sm placeholder:text-slate-400 dark:placeholder:text-slate-600"
+                                            className="w-full bg-white dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700/50 p-3 pl-11 rounded-[12px] text-xs dark:text-slate-100 focus:border-emerald-400 outline-none transition-all shadow-sm placeholder:text-slate-400 dark:placeholder:text-slate-600"
                                             placeholder={paymentMethod === 'mpesa' ? "Ex: 84 / 85..." : "Ex: 86 / 87..."}
                                         />
                                     </div>
@@ -672,7 +672,7 @@ const CompanyForm: React.FC<CompanyFormProps> = ({ initialData, onSubmit, onClos
                                             }, 1500);
                                         }}
                                         disabled={isPaymentProcessing}
-                                        className="w-full py-4 bg-[#10b981] text-white rounded-[8px] font-black text-[11px] uppercase shadow-xl shadow-emerald-100 dark:shadow-none flex items-center justify-center gap-2 transition-all active:scale-95 disabled:opacity-50"
+                                        className="w-full py-4 bg-[#10b981] text-white rounded-[12px] font-black text-[11px] uppercase shadow-xl shadow-emerald-100 dark:shadow-none flex items-center justify-center gap-2 transition-all active:scale-95 disabled:opacity-50"
                                     >
                                         {isPaymentProcessing ? (
                                             <i className="fa-solid fa-circle-notch fa-spin"></i>
@@ -695,7 +695,7 @@ const CompanyForm: React.FC<CompanyFormProps> = ({ initialData, onSubmit, onClos
                                                 placeholder="Titular da Conta"
                                                 value={bankDetails.holder}
                                                 onChange={e => setBankDetails({ ...bankDetails, holder: e.target.value })}
-                                                className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 p-2.5 pl-11 rounded-[8px] text-xs dark:text-slate-100 focus:border-emerald-400 outline-none transition-all shadow-sm"
+                                                className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 p-2.5 pl-11 rounded-[12px] text-xs dark:text-slate-100 focus:border-emerald-400 outline-none transition-all shadow-sm"
                                             />
                                         </div>
                                         <div className="relative">
@@ -705,7 +705,7 @@ const CompanyForm: React.FC<CompanyFormProps> = ({ initialData, onSubmit, onClos
                                                 placeholder="Nome do Banco"
                                                 value={bankDetails.bankName}
                                                 onChange={e => setBankDetails({ ...bankDetails, bankName: e.target.value })}
-                                                className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 p-2.5 pl-11 rounded-[8px] text-xs dark:text-slate-100 focus:border-emerald-400 outline-none transition-all shadow-sm"
+                                                className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 p-2.5 pl-11 rounded-[12px] text-xs dark:text-slate-100 focus:border-emerald-400 outline-none transition-all shadow-sm"
                                             />
                                         </div>
                                         <div className="relative">
@@ -714,7 +714,7 @@ const CompanyForm: React.FC<CompanyFormProps> = ({ initialData, onSubmit, onClos
                                                 placeholder="NIB"
                                                 value={bankDetails.nib}
                                                 onChange={e => setBankDetails({ ...bankDetails, nib: e.target.value })}
-                                                className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 p-2.5 rounded-[8px] text-xs dark:text-slate-100 focus:border-emerald-400 outline-none transition-all shadow-sm"
+                                                className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 p-2.5 rounded-[12px] text-xs dark:text-slate-100 focus:border-emerald-400 outline-none transition-all shadow-sm"
                                             />
                                         </div>
                                         <div className="grid grid-cols-2 gap-2">
@@ -723,14 +723,14 @@ const CompanyForm: React.FC<CompanyFormProps> = ({ initialData, onSubmit, onClos
                                                 placeholder="Agência"
                                                 value={bankDetails.agency}
                                                 onChange={e => setBankDetails({ ...bankDetails, agency: e.target.value })}
-                                                className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 p-2.5 rounded-[8px] text-xs dark:text-slate-100 focus:border-emerald-400 outline-none transition-all shadow-sm"
+                                                className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 p-2.5 rounded-[12px] text-xs dark:text-slate-100 focus:border-emerald-400 outline-none transition-all shadow-sm"
                                             />
                                             <input
                                                 type="text"
                                                 placeholder="IBAN"
                                                 value={bankDetails.iban}
                                                 onChange={e => setBankDetails({ ...bankDetails, iban: e.target.value })}
-                                                className="w-full bg-white dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700/50 p-2.5 rounded-[8px] text-xs dark:text-slate-100 focus:border-emerald-400 outline-none transition-all shadow-sm placeholder:text-slate-400 dark:placeholder:text-slate-600"
+                                                className="w-full bg-white dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700/50 p-2.5 rounded-[12px] text-xs dark:text-slate-100 focus:border-emerald-400 outline-none transition-all shadow-sm placeholder:text-slate-400 dark:placeholder:text-slate-600"
                                             />
                                         </div>
                                     </div>
@@ -750,7 +750,7 @@ const CompanyForm: React.FC<CompanyFormProps> = ({ initialData, onSubmit, onClos
                                             }, 1500);
                                         }}
                                         disabled={isPaymentProcessing}
-                                        className="w-full py-4 bg-emerald-600 text-white rounded-[8px] font-black text-[11px] uppercase shadow-xl shadow-emerald-100 dark:shadow-none flex items-center justify-center gap-2 transition-all active:scale-95 disabled:opacity-50"
+                                        className="w-full py-4 bg-emerald-600 text-white rounded-[12px] font-black text-[11px] uppercase shadow-xl shadow-emerald-100 dark:shadow-none flex items-center justify-center gap-2 transition-all active:scale-95 disabled:opacity-50"
                                     >
                                         {isPaymentProcessing ? (
                                             <i className="fa-solid fa-circle-notch fa-spin"></i>
@@ -767,7 +767,7 @@ const CompanyForm: React.FC<CompanyFormProps> = ({ initialData, onSubmit, onClos
                     {((formData.plan === 'Free') || (hasPaidPlan && (!formData.isFeatured || hasPaidFeatured))) && (
                         <button
                             type="submit"
-                            className="w-full bg-[#1e293b] dark:bg-emerald-600 hover:bg-orange-500 text-white py-4 rounded-[8px] font-black text-xs uppercase tracking-widest shadow-xl transition-all active:scale-95 dark:hover:bg-emerald-500"
+                            className="w-full bg-[#1e293b] dark:bg-emerald-600 hover:bg-orange-500 text-white py-4 rounded-[12px] font-black text-xs uppercase tracking-widest shadow-xl transition-all active:scale-95 dark:hover:bg-emerald-500"
                         >
                             {formData.plan === 'Free' ? 'Publicar Registo Gratuito' : 'Finalizar e Publicar'}
                         </button>

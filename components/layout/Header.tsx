@@ -14,6 +14,13 @@ interface HeaderProps {
     onInstall: () => void;
     isDarkMode: boolean;
     onToggleTheme: () => void;
+    appStats?: { companies: number, products: number, professionals: number };
+    isDbOnline?: boolean;
+    onAbout?: () => void;
+    onPrivacy?: () => void;
+    onHelp?: () => void;
+    onCategoryFilter?: (category: string) => void;
+    onSearchToggle: () => void;
 }
 
 const Header: React.FC<HeaderProps> = ({
@@ -28,7 +35,14 @@ const Header: React.FC<HeaderProps> = ({
     installPrompt,
     onInstall,
     isDarkMode,
-    onToggleTheme
+    onToggleTheme,
+    appStats,
+    isDbOnline,
+    onAbout,
+    onPrivacy,
+    onHelp,
+    onCategoryFilter,
+    onSearchToggle
 }) => {
     const [isMenuOpen, setIsMenuOpen] = React.useState(false);
 
@@ -39,7 +53,7 @@ const Header: React.FC<HeaderProps> = ({
                 { label: 'Scanner de Diagnóstico', icon: 'fa-qrcode', tab: 'scan', color: 'text-emerald-500' },
                 { label: 'Mercado Agrário', icon: 'fa-store', tab: 'discover', color: 'text-orange-500' },
                 { label: 'Rede de Profissionais', icon: 'fa-user-tie', tab: 'discover', params: 'Profissionais', color: 'text-blue-500' },
-                { label: 'Minha Colecção', icon: 'fa-leaf', tab: 'collection', color: 'text-green-600' }
+                { label: 'Minha Colecção', icon: 'fa-leaf', tab: 'collection', color: 'text-green-600', show: !!user }
             ]
         },
         {
@@ -55,9 +69,9 @@ const Header: React.FC<HeaderProps> = ({
             items: [
                 { label: 'Instalar Aplicativo', icon: 'fa-download', action: onInstall, show: true, color: installPrompt ? 'text-emerald-600 animate-pulse' : 'text-slate-400' },
                 { label: 'Aceder ao Site Principal', icon: 'fa-globe', action: () => window.open('https://agrodata.co.mz', '_blank'), color: 'text-emerald-600' },
-                { label: 'Centro de Ajuda', icon: 'fa-circle-question', tab: 'account' }, // Usually leads to support form in account
-                { label: 'Sobre a Botânica', icon: 'fa-circle-info' },
-                { label: 'Termos & Privacidade', icon: 'fa-shield-halved' }
+                { label: 'Centro de Ajuda', icon: 'fa-circle-question', action: onHelp },
+                { label: 'Sobre a Botânica', icon: 'fa-circle-info', action: onAbout },
+                { label: 'Termos & Privacidade', icon: 'fa-shield-halved', action: onPrivacy }
             ]
         }
     ];
@@ -66,7 +80,7 @@ const Header: React.FC<HeaderProps> = ({
         <>
             <header className="px-6 py-5 bg-white dark:bg-[#1a1f2c] border-b border-slate-100 dark:border-slate-700/50 flex justify-between items-center z-[60] relative">
                 <div onClick={onLogoClick} className="flex items-center gap-1.5 cursor-pointer">
-                    <img src="/icon.png" alt="Botânica" className="w-10 h-10 rounded-lg" />
+                    <img src="/icon.png" alt="Botânica" className="w-10 h-10 rounded-[12px]" />
                     <div className="flex flex-col items-start leading-none -ml-0.5">
                         <p className="text-slate-400 dark:text-slate-500 text-[9px] font-black uppercase tracking-[0.2em]">
                             {user ? 'Olá' : 'BEM-VINDO(A)'}
@@ -98,15 +112,22 @@ const Header: React.FC<HeaderProps> = ({
                         </div>
                     )}
                     <button
+                        onClick={onSearchToggle}
+                        className="h-9 w-9 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[12px] flex items-center justify-center hover:bg-emerald-50 dark:hover:bg-emerald-900/30 text-emerald-600 transition-all font-black"
+                        title="Abrir Pesquisa Avançada"
+                    >
+                        <i className="fa-solid fa-magnifying-glass text-sm"></i>
+                    </button>
+                    <button
                         onClick={onToggleTheme}
-                        className="h-9 w-9 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[10px] flex items-center justify-center hover:bg-emerald-50 dark:hover:bg-emerald-900/30 text-emerald-600 transition-all"
+                        className="h-9 w-9 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[12px] flex items-center justify-center hover:bg-emerald-50 dark:hover:bg-emerald-900/30 text-emerald-600 transition-all"
                         title={isDarkMode ? 'Mudar para Tema Claro' : 'Mudar para Tema Escuro'}
                     >
                         <i className={`fa-solid ${isDarkMode ? 'fa-sun' : 'fa-moon'} text-sm`}></i>
                     </button>
                     <button
                         onClick={() => setIsMenuOpen(true)}
-                        className="h-9 w-9 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[10px] flex items-center justify-center hover:bg-orange-50 dark:hover:bg-orange-900/30 text-orange-600 transition-all"
+                        className="h-9 w-9 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[12px] flex items-center justify-center hover:bg-orange-50 dark:hover:bg-orange-900/30 text-orange-600 transition-all"
                     >
                         <i className="fa-solid fa-bars-staggered text-sm"></i>
                     </button>
@@ -129,7 +150,7 @@ const Header: React.FC<HeaderProps> = ({
                             </div>
                             <button
                                 onClick={() => setIsMenuOpen(false)}
-                                className="w-10 h-10 rounded-[10px] bg-slate-50 dark:bg-slate-800 flex items-center justify-center text-slate-400 hover:text-red-500 transition-all active:scale-90"
+                                className="w-10 h-10 rounded-[12px] bg-slate-50 dark:bg-slate-800 flex items-center justify-center text-slate-400 hover:text-red-500 transition-all active:scale-90"
                             >
                                 <i className="fa-solid fa-xmark"></i>
                             </button>
@@ -144,9 +165,9 @@ const Header: React.FC<HeaderProps> = ({
                                             setIsMenuOpen(false);
                                             window.dispatchEvent(new CustomEvent('open-company-form'));
                                         }}
-                                        className="w-full bg-emerald-500 text-white p-4 rounded-[10px] font-black text-[10px] uppercase tracking-[0.2em] shadow-lg shadow-emerald-100 dark:shadow-none flex items-center justify-center gap-3 active:scale-95 transition-all group"
+                                        className="w-full bg-emerald-500 text-white p-4 rounded-[12px] font-black text-[10px] uppercase tracking-[0.2em] shadow-lg shadow-emerald-100 dark:shadow-none flex items-center justify-center gap-3 active:scale-95 transition-all group"
                                     >
-                                        <div className="w-8 h-8 bg-white/20 rounded-[10px] flex items-center justify-center">
+                                        <div className="w-8 h-8 bg-white/20 rounded-[12px] flex items-center justify-center">
                                             <i className="fa-solid fa-building-circle-plus text-sm"></i>
                                         </div>
                                         <span>Anunciar Negócio</span>
@@ -163,21 +184,20 @@ const Header: React.FC<HeaderProps> = ({
                                             return (
                                                 <button
                                                     key={iIdx}
-                                                    className="w-full flex items-center gap-4 p-3 px-4 rounded-[10px] hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-all group active:scale-95 text-left"
+                                                    className="w-full flex items-center gap-4 p-3 px-4 rounded-[12px] hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-all group active:scale-95 text-left"
                                                     onClick={() => {
                                                         setIsMenuOpen(false);
                                                         if (item.action) {
                                                             item.action();
                                                         } else if (item.tab) {
                                                             onNavigate(item.tab);
-                                                            if (item.params) {
-                                                                // If we had a direct category trigger, we'd use it here.
-                                                                // For now let's use the tab change.
+                                                            if (item.params && onCategoryFilter) {
+                                                                onCategoryFilter(item.params);
                                                             }
                                                         }
                                                     }}
                                                 >
-                                                    <div className={`w-10 h-10 bg-slate-50 dark:bg-slate-800 ${item.color || 'text-slate-400 dark:text-slate-500'} group-hover:scale-110 rounded-[10px] flex items-center justify-center text-sm transition-all shadow-sm border border-slate-100 dark:border-slate-700`}>
+                                                    <div className={`w-10 h-10 bg-slate-50 dark:bg-slate-800 ${item.color || 'text-slate-400 dark:text-slate-500'} group-hover:scale-110 rounded-[12px] flex items-center justify-center text-sm transition-all shadow-sm border border-slate-100 dark:border-slate-700`}>
                                                         <i className={`fa-solid ${item.icon}`}></i>
                                                     </div>
                                                     <span className="font-bold text-slate-600 dark:text-slate-100 text-[13px] tracking-tight">{item.label}</span>

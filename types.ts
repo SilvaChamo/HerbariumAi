@@ -93,6 +93,7 @@ export interface CompanyDetail {
   billingPeriod?: BillingPeriod;
   isFeatured?: boolean;
   isVerified?: boolean;
+  is_archived?: boolean;
   paymentMethod?: 'mpesa' | 'emola' | 'banco' | null;
   paymentPhone?: string;
   productLimit?: number | null; // new field indicating max products for the plan
@@ -112,6 +113,7 @@ export interface Professional {
   rating?: number;
   profession?: string;
   whatsapp?: string;
+  is_archived?: boolean;
 }
 
 export interface MarketProduct {
@@ -122,6 +124,7 @@ export interface MarketProduct {
   price: number;
   description: string;
   company_id: string;
+  is_archived?: boolean;
 }
 
 export interface VideoAd {
@@ -131,5 +134,18 @@ export interface VideoAd {
   address: string;
   videoLink: string;
   embedUrl: string;
+  is_archived?: boolean;
   createdAt?: string;
+}
+
+export interface News {
+  id: string;
+  name: string;
+  activity: string;
+  description: string;
+  searchType: 'Notícias' | 'Dicas';
+  icon: string;
+  date: string;
+  image_url?: string;
+  content?: string;
 }

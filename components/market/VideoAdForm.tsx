@@ -39,7 +39,7 @@ const VideoAdForm: React.FC<VideoAdFormProps> = ({ onSubmit, onClose }) => {
         return (
             <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
                 <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-md" onClick={onClose} />
-                <div className="relative w-full max-w-md bg-white dark:bg-slate-900 rounded-[40px] shadow-2xl overflow-hidden animate-in zoom-in duration-300">
+                <div className="relative w-full max-w-md bg-white dark:bg-slate-900 rounded-[12px] shadow-2xl overflow-hidden animate-in zoom-in duration-300">
                     <InvoiceReceipt
                         companyName={formData.companyName}
                         plan="Publicidade em Vídeo"
@@ -61,7 +61,7 @@ const VideoAdForm: React.FC<VideoAdFormProps> = ({ onSubmit, onClose }) => {
             <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-md" onClick={onClose} />
             <form
                 onSubmit={handleSubmit}
-                className="relative w-full max-w-md bg-white dark:bg-[#1a1f2c] rounded-[40px] shadow-2xl overflow-hidden animate-in slide-in-from-bottom duration-500 overflow-y-auto max-h-[90vh]"
+                className="relative w-full max-w-md bg-white dark:bg-[#1a1f2c] rounded-[12px] shadow-2xl overflow-hidden animate-in slide-in-from-bottom duration-500 overflow-y-auto max-h-[90vh]"
             >
                 <div className="p-8 pb-4 flex justify-between items-center bg-slate-50 dark:bg-slate-800/50 border-b border-slate-100 dark:border-slate-800">
                     <div>
@@ -87,7 +87,7 @@ const VideoAdForm: React.FC<VideoAdFormProps> = ({ onSubmit, onClose }) => {
                                 value={formData.companyName}
                                 onChange={e => setFormData({ ...formData, companyName: e.target.value })}
                                 placeholder="Ex: FarmMoz Lda"
-                                className="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-orange-400 transition-all dark:text-slate-100"
+                                className="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-[12px] px-4 py-3 text-sm focus:outline-none focus:border-orange-400 transition-all dark:text-slate-100"
                             />
                         </div>
 
@@ -100,7 +100,7 @@ const VideoAdForm: React.FC<VideoAdFormProps> = ({ onSubmit, onClose }) => {
                                     value={formData.phone}
                                     onChange={e => setFormData({ ...formData, phone: e.target.value })}
                                     placeholder="84 / 85 / 82..."
-                                    className="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-orange-400 transition-all dark:text-slate-100"
+                                    className="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-[12px] px-4 py-3 text-sm focus:outline-none focus:border-orange-400 transition-all dark:text-slate-100"
                                 />
                             </div>
                             <div>
@@ -111,7 +111,7 @@ const VideoAdForm: React.FC<VideoAdFormProps> = ({ onSubmit, onClose }) => {
                                     value={formData.address}
                                     onChange={e => setFormData({ ...formData, address: e.target.value })}
                                     placeholder="Ex: Maputo, Av. 24 Julho"
-                                    className="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-orange-400 transition-all dark:text-slate-100"
+                                    className="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-[12px] px-4 py-3 text-sm focus:outline-none focus:border-orange-400 transition-all dark:text-slate-100"
                                 />
                             </div>
                         </div>
@@ -126,14 +126,8 @@ const VideoAdForm: React.FC<VideoAdFormProps> = ({ onSubmit, onClose }) => {
                                     value={formData.videoLink}
                                     onChange={e => setFormData({ ...formData, videoLink: e.target.value })}
                                     placeholder="https://youtube.com/watch?v=..."
-                                    className="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl pl-12 pr-4 py-3 text-sm focus:outline-none focus:border-orange-400 transition-all dark:text-slate-100"
+                                    className="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-[12px] pl-12 pr-4 py-3 text-sm focus:outline-none focus:border-orange-400 transition-all dark:text-slate-100"
                                 />
-                            </div>
-                            <div className="mt-3 p-3 bg-red-50 rounded-xl border border-red-100 flex items-start gap-3">
-                                <i className="fa-solid fa-circle-exclamation text-red-500 mt-0.5"></i>
-                                <p className="text-[9px] font-bold text-red-600 leading-relaxed uppercase tracking-tight">
-                                    O vídeo não pode exceder 15 segundos. O não cumprimento resultará em multa ou remoção imediata da plataforma.
-                                </p>
                             </div>
                         </div>
                     </div>
@@ -141,7 +135,7 @@ const VideoAdForm: React.FC<VideoAdFormProps> = ({ onSubmit, onClose }) => {
                     <div className="pt-4">
                         <button
                             type="submit"
-                            className="w-full bg-orange-500 hover:bg-orange-600 text-white py-4 rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl shadow-orange-100 dark:shadow-none transition-all active:scale-95 flex items-center justify-center gap-3"
+                            className="w-full bg-orange-500 hover:bg-orange-600 text-white py-4 rounded-[12px] font-black text-xs uppercase tracking-widest shadow-xl shadow-orange-100 dark:shadow-none transition-all active:scale-95 flex items-center justify-center gap-3"
                         >
                             <span>Ir para Pagamento (2.000 MT)</span>
                             <i className="fa-solid fa-arrow-right"></i>
