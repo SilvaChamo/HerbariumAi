@@ -8,7 +8,7 @@ interface NavBarProps {
 
 const NavBar: React.FC<NavBarProps> = ({ activeTab, onTabChange }) => {
     return (
-        <nav className="bg-white dark:bg-slate-900 border-t border-slate-100 dark:border-slate-800 flex justify-between items-center z-50 transition-colors">
+        <nav className="bg-white dark:bg-[#1a1f2c] border-t border-slate-100 dark:border-slate-700/50 flex justify-between items-center z-50 transition-colors">
             <button
                 onClick={() => onTabChange(AppTab.SCAN)}
                 className={`flex-1 py-4 flex flex-col items-center gap-1 transition-all ${activeTab === AppTab.SCAN ? 'text-[#f97316]' : 'text-slate-300 dark:text-slate-600'

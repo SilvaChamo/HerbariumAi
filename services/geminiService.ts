@@ -1,14 +1,21 @@
-
 import { GoogleGenAI, Type } from "@google/genai";
 import { PlantInfo } from "../types";
 
 export const identifyPlant = async (base64Image: string): Promise<PlantInfo> => {
-  const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
-  if (!apiKey) {
-    throw new Error("Gemini API Key não configurada. Verifique o arquivo .env.local.");
+  // Try many sources for the API key to be extremely robust
+  const apiKey = (import.meta.env?.VITE_GEMINI_API_KEY) ||
+    ((typeof process !== 'undefined') ? process.env?.VITE_GEMINI_API_KEY : undefined) ||
+    ((typeof process !== 'undefined') ? process.env?.GEMINI_API_KEY : undefined);
+
+  if (!apiKey || apiKey === 'undefined') {
+    throw new Error("Gemini API Key não configurada ou inválida. Verifique o seu ficheiro .env.local e reinicie o servidor (npm run dev).");
   }
-  const ai = new GoogleGenAI(apiKey);
-  const model = 'gemini-1.5-flash';
+
+  // Use v1beta and gemini-2.0-flash which is widely available and more robust
+  const ai = new GoogleGenAI({
+    apiKey: apiKey as string,
+    apiVersion: 'v1beta'
+  });
 
   const prompt = `Identifique esta planta e analise se ela apresenta sinais de doenças ou pragas (ex: ferrugem, pulgão, oídio). Forneça detalhes em Português.
   
@@ -19,65 +26,70 @@ export const identifyPlant = async (base64Image: string): Promise<PlantInfo> => 
   2. Indique o pesticida químico ou cura natural aplicável.
   3. FORNEÇA DADOS DO MERCADO MOÇAMBICANO: Onde encontrar (ex: Casa do Agricultor, mercados locais), custo estimado em Meticais (MZN).
   
-  Se não for uma planta, responda com incerteza.`;
+  Se não for uma planta, responda com incerteza.
+
+  RESPONDA APENAS COM UM OBJETO JSON VÁLIDO seguindo esta estrutura:
+  {
+    "name": "Nome Comum",
+    "scientificName": "Nome Científico",
+    "confidence": 0.95,
+    "properties": ["propriedade 1", "propriedade 2"],
+    "benefits": ["benefício 1"],
+    "history": "Breve história",
+    "origin": "Origem",
+    "soilType": "Solo ideal",
+    "medicinalUses": ["uso 1"],
+    "diagnosis": {
+      "hasDisease": true,
+      "name": "Nome da Doença",
+      "symptoms": "Sintomas",
+      "pesticideOrCure": "Cura",
+      "marketSolution": "Solução no mercado",
+      "estimatedCostMZN": "Custo em Meticais",
+      "whereToBuyMozambique": "Onde comprar"
+    },
+    "recipes": [
+      {
+        "type": "Chá/Culinária",
+        "title": "Título",
+        "ingredients": ["item 1"],
+        "instructions": ["passo 1"]
+      }
+    ]
+  }`;
 
   const response = await ai.models.generateContent({
-    model,
-    contents: {
+    model: 'gemini-2.0-flash',
+    contents: [{
+      role: 'user',
       parts: [
-        { inlineData: { mimeType: 'image/jpeg', data: base64Image } },
+        { inlineData: { mimeType: 'image/webp', data: base64Image } },
         { text: prompt }
       ]
-    },
-    config: {
-      responseMimeType: "application/json",
-      responseSchema: {
-        type: Type.OBJECT,
-        properties: {
-          name: { type: Type.STRING },
-          scientificName: { type: Type.STRING },
-          confidence: { type: Type.NUMBER },
-          properties: { type: Type.ARRAY, items: { type: Type.STRING } },
-          benefits: { type: Type.ARRAY, items: { type: Type.STRING } },
-          history: { type: Type.STRING },
-          origin: { type: Type.STRING },
-          soilType: { type: Type.STRING },
-          medicinalUses: { type: Type.ARRAY, items: { type: Type.STRING } },
-          diagnosis: {
-            type: Type.OBJECT,
-            properties: {
-              hasDisease: { type: Type.BOOLEAN },
-              name: { type: Type.STRING },
-              symptoms: { type: Type.STRING },
-              pesticideOrCure: { type: Type.STRING },
-              marketSolution: { type: Type.STRING },
-              estimatedCostMZN: { type: Type.STRING },
-              whereToBuyMozambique: { type: Type.STRING }
-            }
-          },
-          recipes: {
-            type: Type.ARRAY,
-            items: {
-              type: Type.OBJECT,
-              properties: {
-                type: { type: Type.STRING },
-                title: { type: Type.STRING },
-                ingredients: { type: Type.ARRAY, items: { type: Type.STRING } },
-                instructions: { type: Type.ARRAY, items: { type: Type.STRING } }
-              },
-              required: ["type", "title", "ingredients", "instructions"]
-            }
-          }
-        },
-        required: ["name", "scientificName", "properties", "benefits", "history", "origin", "soilType", "medicinalUses", "recipes"]
-      }
-    }
+    }]
   });
 
-  const data = JSON.parse(response.text);
-  return {
-    ...data,
-    id: Math.random().toString(36).substr(2, 9),
-    imageUrl: `data:image/jpeg;base64,${base64Image}`
-  };
+  if (!response.text) {
+    throw new Error("O modelo não retornou texto. Verifique se a imagem é clara.");
+  }
+
+  // Robust parsing to handle potential markdown formatting from Gemini
+  let jsonText = response.text;
+  if (jsonText.includes('```json')) {
+    jsonText = jsonText.split('```json')[1].split('```')[0];
+  } else if (jsonText.includes('```')) {
+    jsonText = jsonText.split('```')[1].split('```')[0];
+  }
+
+  try {
+    const data = JSON.parse(jsonText.trim());
+    return {
+      ...data,
+      id: Math.random().toString(36).substr(2, 9),
+      imageUrl: `data:image/webp;base64,${base64Image}`
+    };
+  } catch (parseErr) {
+    console.error("Parse error:", parseErr, "Raw text:", response.text);
+    throw new Error("Erro ao processar a resposta da IA. Por favor, tente novamente.");
+  }
 };

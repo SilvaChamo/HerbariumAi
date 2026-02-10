@@ -4,6 +4,7 @@ export interface User {
   email: string;
   name: string;
   avatar_url?: string;
+  isAdmin?: boolean;
 }
 
 export interface DiseaseDiagnosis {

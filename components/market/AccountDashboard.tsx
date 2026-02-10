@@ -10,6 +10,7 @@ interface AccountDashboardProps {
     onEditCompany: () => void;
     onRegisterCompany: () => void;
     onLogout: () => void;
+    onAdminAction?: (action: string) => void;
 }
 
 const AccountDashboard: React.FC<AccountDashboardProps> = ({
@@ -17,7 +18,8 @@ const AccountDashboard: React.FC<AccountDashboardProps> = ({
     company,
     onEditCompany,
     onRegisterCompany,
-    onLogout
+    onLogout,
+    onAdminAction
 }) => {
     const [showReceipt, setShowReceipt] = useState(false);
     const [showQRCode, setShowQRCode] = useState(false);
@@ -427,6 +429,66 @@ const AccountDashboard: React.FC<AccountDashboardProps> = ({
                     )}
                 </div>
             </div>
+
+            {/* Admin Panel (Only for admins) */}
+            {user.isAdmin && (
+                <div className="px-6 space-y-4">
+                    <div className="flex items-center justify-between px-1">
+                        <h3 className="text-[10px] font-black uppercase text-orange-500 dark:text-orange-400 tracking-widest">Painel Administrativo</h3>
+                        <span className="text-[8px] font-black bg-orange-100 dark:bg-orange-900/40 text-orange-600 dark:text-orange-400 px-2 py-0.5 rounded-full uppercase">Super Admin</span>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-3">
+                        <button
+                            onClick={() => onAdminAction?.('videos')}
+                            className="bg-white dark:bg-slate-800 p-4 rounded-xl border border-orange-100 dark:border-orange-900/20 shadow-sm flex flex-col items-center gap-2 group active:scale-95 transition-all text-center"
+                        >
+                            <div className="w-10 h-10 bg-orange-50 dark:bg-orange-900/20 text-orange-500 rounded-lg flex items-center justify-center text-sm group-hover:bg-orange-500 group-hover:text-white transition-all">
+                                <i className="fa-solid fa-film"></i>
+                            </div>
+                            <span className="text-[9px] font-black text-slate-700 dark:text-slate-100 uppercase leading-tight">Gestão de Vídeos</span>
+                        </button>
+
+                        <button
+                            onClick={() => onAdminAction?.('Produtos')}
+                            className="bg-white dark:bg-slate-800 p-4 rounded-xl border border-orange-100 dark:border-orange-900/20 shadow-sm flex flex-col items-center gap-2 group active:scale-95 transition-all text-center"
+                        >
+                            <div className="w-10 h-10 bg-orange-50 dark:bg-orange-900/20 text-orange-500 rounded-lg flex items-center justify-center text-sm group-hover:bg-orange-500 group-hover:text-white transition-all">
+                                <i className="fa-solid fa-box-open"></i>
+                            </div>
+                            <span className="text-[9px] font-black text-slate-700 dark:text-slate-100 uppercase leading-tight">Gestão de Produtos</span>
+                        </button>
+
+                        <button
+                            onClick={() => onAdminAction?.('Empresas')}
+                            className="bg-white dark:bg-slate-800 p-4 rounded-xl border border-orange-100 dark:border-orange-900/20 shadow-sm flex flex-col items-center gap-2 group active:scale-95 transition-all text-center"
+                        >
+                            <div className="w-10 h-10 bg-orange-50 dark:bg-orange-900/20 text-orange-500 rounded-lg flex items-center justify-center text-sm group-hover:bg-orange-500 group-hover:text-white transition-all">
+                                <i className="fa-solid fa-building-shield"></i>
+                            </div>
+                            <span className="text-[9px] font-black text-slate-700 dark:text-slate-100 uppercase leading-tight">Gestão de Empresas</span>
+                        </button>
+
+                        <button
+                            onClick={() => onAdminAction?.('Alertas')}
+                            className="bg-white dark:bg-slate-800 p-4 rounded-xl border border-orange-100 dark:border-orange-900/20 shadow-sm flex flex-col items-center gap-2 group active:scale-95 transition-all text-center"
+                        >
+                            <div className="w-10 h-10 bg-orange-50 dark:bg-orange-900/20 text-orange-500 rounded-lg flex items-center justify-center text-sm group-hover:bg-orange-500 group-hover:text-white transition-all">
+                                <i className="fa-solid fa-comments"></i>
+                            </div>
+                            <span className="text-[9px] font-black text-slate-700 dark:text-slate-100 uppercase leading-tight">Mensagens & Leads</span>
+                        </button>
+                    </div>
+
+                    <button
+                        onClick={() => onAdminAction?.('Profissionais')}
+                        className="w-full bg-slate-900 dark:bg-orange-600 text-white p-4 rounded-xl flex items-center justify-center gap-3 active:scale-95 transition-all group"
+                    >
+                        <i className="fa-solid fa-user-tie text-base"></i>
+                        <span className="text-[10px] font-black uppercase tracking-widest">Gerenciar Profissionais</span>
+                    </button>
+                </div>
+            )}
 
             {/* Logout Section */}
             <div className="px-6 py-8">

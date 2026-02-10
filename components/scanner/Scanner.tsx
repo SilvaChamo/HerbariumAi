@@ -17,27 +17,43 @@ const Scanner: React.FC<ScannerProps> = ({ onPlantIdentified, onLoadingChange })
     const startCamera = async () => {
         try {
             setScanning(true);
-            const stream = await navigator.mediaDevices.getUserMedia({
+            // Flexible constraints for wider compatibility
+            const constraints = {
                 video: {
                     facingMode: 'environment',
-                    width: { ideal: 1280 },
-                    height: { ideal: 720 }
+                    width: { ideal: 1920, max: 1920 },
+                    height: { ideal: 1080, max: 1080 }
                 }
-            });
+            };
+
+            const stream = await navigator.mediaDevices.getUserMedia(constraints);
 
             if (videoRef.current) {
                 videoRef.current.srcObject = stream;
-                // Add explicit play for mobile browsers
-                try {
-                    await videoRef.current.play();
-                } catch (playErr) {
-                    console.error("Video play failed:", playErr);
-                }
+
+                // Wait for metadata to load before playing
+                videoRef.current.onloadedmetadata = async () => {
+                    try {
+                        if (videoRef.current) {
+                            await videoRef.current.play();
+                        }
+                    } catch (playErr) {
+                        console.error("Video play failed:", playErr);
+                    }
+                };
             }
         } catch (err: any) {
             console.error("Camera access error:", err);
-            alert(`Acesso à câmera negado: ${err.message || 'Erro desconhecido'}`);
-            setScanning(false);
+            // Fallback for devices that might not support specific constraints
+            try {
+                const fallbackStream = await navigator.mediaDevices.getUserMedia({ video: true });
+                if (videoRef.current) {
+                    videoRef.current.srcObject = fallbackStream;
+                }
+            } catch (fallbackErr) {
+                alert(`Acesso à câmera negado: ${err.message || 'Erro desconhecido'}`);
+                setScanning(false);
+            }
         }
     };
 
@@ -76,11 +92,16 @@ const Scanner: React.FC<ScannerProps> = ({ onPlantIdentified, onLoadingChange })
 
                 const plantInfo = await identifyPlant(base64);
                 onPlantIdentified(plantInfo);
+
+                // Stop all tracks
                 const stream = video.srcObject as MediaStream;
-                stream.getTracks().forEach(t => t.stop());
+                if (stream) {
+                    stream.getTracks().forEach(t => t.stop());
+                }
                 setScanning(false);
-            } catch (e) {
-                alert("Erro na identificação.");
+            } catch (e: any) {
+                console.error("Identification error:", e);
+                alert(`Erro na identificação: ${e.message || 'Erro de processamento'}`);
             } finally {
                 setLoading(false);
                 onLoadingChange(false);

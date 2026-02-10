@@ -64,7 +64,7 @@ const Header: React.FC<HeaderProps> = ({
 
     return (
         <>
-            <header className="px-6 py-5 bg-white dark:bg-slate-900 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center z-[60] relative">
+            <header className="px-6 py-5 bg-white dark:bg-[#1a1f2c] border-b border-slate-100 dark:border-slate-700/50 flex justify-between items-center z-[60] relative">
                 <div onClick={onLogoClick} className="flex items-center gap-1.5 cursor-pointer">
                     <img src="/icon.png" alt="Botânica" className="w-10 h-10 rounded-lg" />
                     <div className="flex flex-col items-start leading-none -ml-0.5">
@@ -121,8 +121,8 @@ const Header: React.FC<HeaderProps> = ({
                         onClick={() => setIsMenuOpen(false)}
                     />
 
-                    <div className="absolute right-0 top-0 h-full w-[85%] max-w-[320px] bg-white dark:bg-slate-900 shadow-2xl animate-in slide-in-from-right duration-500 flex flex-col">
-                        <div className="p-6 border-b border-slate-50 dark:border-slate-800 flex justify-between items-center bg-white dark:bg-slate-900 sticky top-0 z-10">
+                    <div className="absolute right-0 top-0 h-full w-[85%] max-w-[320px] bg-white dark:bg-[#1a1f2c] shadow-2xl animate-in slide-in-from-right duration-500 flex flex-col">
+                        <div className="p-6 border-b border-slate-50 dark:border-slate-800 flex justify-between items-center bg-white dark:bg-[#1a1f2c] sticky top-0 z-10">
                             <div>
                                 <span className="text-[10px] font-black text-slate-300 dark:text-slate-600 uppercase tracking-[0.2em] block mb-1">Navegação</span>
                                 <h3 className="text-lg font-black text-slate-800 dark:text-slate-100 tracking-tight">Menu Principal</h3>
@@ -196,7 +196,7 @@ const Header: React.FC<HeaderProps> = ({
                             </div>
                         </div>
                     </div>
-                </div>
+                </div >
             )}
         </>
     );

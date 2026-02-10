@@ -23,6 +23,8 @@ import { CompanyDetail, PlantInfo, User, Professional, MarketProduct, AppTab } f
 import { supabase } from './supabaseClient';
 import { databaseService } from './services/databaseService';
 
+const ADMIN_EMAILS = ['admin@botanica.co.mz', 'silva@agrodata.co.mz', 'chamo@agrodata.co.mz'];
+
 const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState<AppTab>(AppTab.SCAN);
   const [isDarkMode, setIsDarkMode] = useState(() => {
@@ -96,7 +98,8 @@ const App: React.FC = () => {
           id: session.user.id,
           email: session.user.email || '',
           name: session.user.user_metadata.full_name || 'Usuário',
-          avatar_url: session.user.user_metadata.avatar_url || session.user.user_metadata.picture
+          avatar_url: session.user.user_metadata.avatar_url || session.user.user_metadata.picture,
+          isAdmin: ADMIN_EMAILS.includes(session.user.email || '')
         };
         setUser(userData);
         loadUserData(userData.id);
@@ -110,7 +113,8 @@ const App: React.FC = () => {
           id: session.user.id,
           email: session.user.email || '',
           name: session.user.user_metadata.full_name || 'Usuário',
-          avatar_url: session.user.user_metadata.avatar_url || session.user.user_metadata.picture
+          avatar_url: session.user.user_metadata.avatar_url || session.user.user_metadata.picture,
+          isAdmin: ADMIN_EMAILS.includes(session.user.email || '')
         };
         // Só actualiza se os dados mudarem efectivamente
         setUser(prev => prev?.id === userData.id ? prev : userData);
@@ -137,6 +141,18 @@ const App: React.FC = () => {
       localStorage.setItem('theme', 'light');
     }
   }, [isDarkMode]);
+
+  // Efeito para calcular a altura real do viewport no mobile (evita problemas com a barra de endereços)
+  useEffect(() => {
+    const calcVH = () => {
+      const vh = window.innerHeight * 0.01;
+      document.documentElement.style.setProperty('--vh', `${vh}px`);
+    };
+
+    calcVH();
+    window.addEventListener('resize', calcVH);
+    return () => window.removeEventListener('resize', calcVH);
+  }, []);
 
   // Efeito isolado para o atalho de registo via evento customizado e instalação PWA
   useEffect(() => {
@@ -217,7 +233,8 @@ const App: React.FC = () => {
   };
 
   const handleAuth = (newUser: User) => {
-    setUser(newUser);
+    const userWithAdmin = { ...newUser, isAdmin: ADMIN_EMAILS.includes(newUser.email) };
+    setUser(userWithAdmin);
     if (pendingRegister) {
       setActiveTab(AppTab.DISCOVER);
       setShowCompanyForm(true);
@@ -362,7 +379,10 @@ const App: React.FC = () => {
   };
 
   return (
-    <div className={`w-full sm:w-[clamp(360px,95vw,380px)] h-screen sm:h-[min(844px,calc(100vh-40px))] sm:my-4 flex flex-col relative overflow-hidden sm:rounded-[2.5rem] sm:border-[8px] sm:border-slate-800 dark:sm:border-slate-900 shadow-2xl text-slate-800 dark:text-slate-100 transition-all duration-500 ${isDarkMode ? 'bg-[#0f172a]' : 'bg-[#f1f5f9]'}`}>
+    <div
+      className={`w-full sm:w-[500px] flex flex-col relative overflow-hidden text-slate-800 dark:text-slate-100 transition-all duration-500 ${isDarkMode ? 'bg-[#0f172a]' : 'bg-[#f1f5f9]'}`}
+      style={{ height: 'calc(var(--vh, 1vh) * 100)' }}
+    >
       <Header
         user={user}
         myCompany={myCompany}
@@ -585,6 +605,10 @@ const App: React.FC = () => {
               <CompanyDetailView
                 company={viewingCompany}
                 onBack={() => setViewingCompany(null)}
+                onEdit={user.isAdmin ? () => {
+                  setViewingCompany(null);
+                  setShowCompanyForm(true);
+                } : undefined}
               />
             ) : viewingProduct ? (
               <ProductDetailView
@@ -594,6 +618,11 @@ const App: React.FC = () => {
                   setViewingProduct(null);
                   setViewingCompany(comp);
                 }}
+                onEdit={user.isAdmin ? () => {
+                  // Implement product direct edit if needed, for now use current flow
+                  setViewingProduct(null);
+                  setViewingCompany(myCompany || {} as any); // fallback or specific logic
+                } : undefined}
               />
             ) : viewingProfessional ? (
               <ProfessionalDetailView
@@ -769,6 +798,13 @@ const App: React.FC = () => {
               user={user}
               company={myCompany}
               onLogout={handleLogout}
+              onAdminAction={(action) => {
+                if (action === 'videos') {
+                  setShowVideoAdForm(true);
+                } else {
+                  handleCategoryClick(action);
+                }
+              }}
               onEditCompany={() => {
                 setActiveTab(AppTab.DISCOVER);
                 setShowCompanyForm(true);
