@@ -131,7 +131,7 @@ const VideoManagement: React.FC<VideoManagementProps> = ({ onClose, onAddVideo }
                                         <i className="fa-brands fa-youtube text-red-500 text-2xl group-hover:scale-125 transition-transform"></i>
                                         {(video as any).is_archived && (
                                             <div className="absolute inset-0 bg-slate-900/80 flex items-center justify-center">
-                                                <span className="text-[8px] font-black text-white uppercase tracking-widest">Arquivado</span>
+                                                <span className="text-[8px] font-black text-white uppercase tracking-widest">Arquivados</span>
                                             </div>
                                         )}
                                     </div>
@@ -140,7 +140,7 @@ const VideoManagement: React.FC<VideoManagementProps> = ({ onClose, onAddVideo }
                                     <div className="flex-1 min-w-0 flex flex-col justify-center">
                                         <div className="flex items-center gap-2 mb-1">
                                             <h3 className="font-black text-slate-800 dark:text-slate-100 uppercase text-xs truncate">{video.companyName}</h3>
-                                            {(video as any).is_archived && <span className="bg-slate-100 dark:bg-slate-700 text-slate-400 text-[7px] font-black px-1.5 py-0.5 rounded uppercase">Arquivado</span>}
+                                            {(video as any).is_archived && <span className="bg-slate-100 dark:bg-slate-700 text-slate-400 text-[7px] font-black px-1.5 py-0.5 rounded uppercase">Arquivados</span>}
                                         </div>
                                         <p className="text-[10px] text-slate-500 dark:text-slate-400 font-medium flex items-center gap-2">
                                             <i className="fa-solid fa-phone text-[8px]"></i> {video.phone}
@@ -160,8 +160,6 @@ const VideoManagement: React.FC<VideoManagementProps> = ({ onClose, onAddVideo }
                                             <i className="fa-solid fa-play text-xs"></i>
                                         </button>
 
-                                        {/* Arquivar desativado para vídeos por falta de coluna no DB */}
-                                        {/* 
                                         <button
                                             onClick={() => handleArchive(video.id, (video as any).is_archived)}
                                             className={`w-9 h-9 rounded-xl flex items-center justify-center transition-all ${(video as any).is_archived ? 'bg-emerald-50 text-emerald-600 hover:bg-emerald-600 hover:text-white' : 'bg-slate-50 text-slate-400 hover:bg-slate-500 hover:text-white'}`}
@@ -169,7 +167,6 @@ const VideoManagement: React.FC<VideoManagementProps> = ({ onClose, onAddVideo }
                                         >
                                             <i className={`fa-solid ${(video as any).is_archived ? 'fa-rotate-left' : 'fa-box-archive'} text-xs`}></i>
                                         </button>
-                                        */}
 
                                         <button
                                             onClick={() => handleDelete(video.id)}
@@ -187,7 +184,8 @@ const VideoManagement: React.FC<VideoManagementProps> = ({ onClose, onAddVideo }
 
                 {/* Footer */}
                 <div className="p-6 bg-white dark:bg-slate-900 border-t border-slate-100 dark:border-slate-800 text-center">
-                    <p className="text-[9px] font-bold text-slate-400 uppercase tracking-[0.2em]">Agro Data Ads Manager • v2.0</p>
+                    <p className="text-[9px] font-bold text-slate-400 uppercase tracking-[0.2em]">Agro Data Ads Manager</p>
+                    <p className="text-[8px] text-slate-300 mt-2">Nota: Se eliminar todos os vídeos, o sistema exibirá spots padrão de Pecuária.</p>
                 </div>
             </div>
         </div>

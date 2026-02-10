@@ -3,11 +3,12 @@ import { CompanyDetail } from '../../types';
 
 interface MarketDashboardProps {
     company: CompanyDetail;
+    stats?: { views: number; leads: number };
     onClose: () => void;
     onEdit: () => void;
 }
 
-const MarketDashboard: React.FC<MarketDashboardProps> = ({ company, onClose, onEdit }) => {
+const MarketDashboard: React.FC<MarketDashboardProps> = ({ company, stats, onClose, onEdit }) => {
     return (
         <div className="p-6 pb-20 space-y-6 animate-in fade-in slide-in-from-bottom">
             <div className="flex justify-between items-center">
@@ -25,13 +26,11 @@ const MarketDashboard: React.FC<MarketDashboardProps> = ({ company, onClose, onE
             <div className="grid grid-cols-2 gap-4">
                 <div className="bg-white dark:bg-slate-800 p-4 rounded-lg border border-slate-100 dark:border-slate-700 shadow-sm">
                     <p className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase mb-1">Visualizações</p>
-                    <p className="text-xl font-black text-emerald-600">1.240</p>
+                    <p className="text-xl font-black text-emerald-600">{stats?.views || 0}</p>
                 </div>
                 <div className="bg-white dark:bg-slate-800 p-4 rounded-lg border border-slate-100 dark:border-slate-700 shadow-sm">
-                    <p className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase mb-1">Destaque</p>
-                    <p className={`text-xs font-bold ${company.isFeatured ? 'text-orange-500' : 'text-slate-300 dark:text-slate-600'}`}>
-                        {company.isFeatured ? 'Ativado' : 'Inativo'}
-                    </p>
+                    <p className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase mb-1">Interessados (Leads)</p>
+                    <p className="text-xl font-black text-orange-500">{stats?.leads || 0}</p>
                 </div>
             </div>
 

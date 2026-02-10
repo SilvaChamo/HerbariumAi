@@ -109,15 +109,30 @@ const ProfessionalForm: React.FC<ProfessionalFormProps> = ({ user, onClose, onSu
                             <option value="Doutor">Doutor</option>
                         </select>
 
-                        <input
+                        <select
                             required
-                            type="text"
-                            placeholder="Profissão (Ex: Agrónomo)"
-                            value={formData.profession}
-                            onChange={e => setFormData({ ...formData, profession: e.target.value })}
-                            className="bg-white dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/50 p-3 rounded-[12px] text-xs outline-none focus:border-emerald-500 dark:focus:border-emerald-500 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-600"
-                        />
+                            value={formData.category}
+                            onChange={e => setFormData({ ...formData, category: e.target.value })}
+                            className="bg-white dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/50 p-3 rounded-[12px] text-xs outline-none focus:border-emerald-500 dark:focus:border-emerald-500 dark:text-white"
+                        >
+                            <option value="" disabled>Categoria</option>
+                            <option value="Agrónomos">Agrónomos</option>
+                            <option value="Engenheiros">Engenheiros</option>
+                            <option value="Técnicos">Técnicos</option>
+                            <option value="Consultores">Consultores</option>
+                            <option value="Pesquisadores">Pesquisadores</option>
+                            <option value="Outros">Outros</option>
+                        </select>
                     </div>
+
+                    <input
+                        required
+                        type="text"
+                        placeholder="Profissão (Ex: Fitopatologista / Engenheiro Agrónomo)"
+                        value={formData.profession}
+                        onChange={e => setFormData({ ...formData, profession: e.target.value })}
+                        className="w-full bg-white dark:border-slate-700/50 border border-slate-200 dark:bg-slate-800/50 p-3 rounded-[12px] text-xs outline-none focus:border-emerald-500 dark:focus:border-emerald-500 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-600"
+                    />
 
                     <input
                         type="tel"

@@ -135,6 +135,7 @@ export interface VideoAd {
   videoLink: string;
   embedUrl: string;
   is_archived?: boolean;
+  userId?: string;
   createdAt?: string;
 }
 

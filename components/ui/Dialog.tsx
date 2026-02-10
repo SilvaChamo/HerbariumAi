@@ -28,7 +28,7 @@ const Dialog: React.FC<DialogProps> = ({ isOpen, title, message, type = 'info', 
                     {icons[type]}
                 </div>
 
-                <h3 className="text-lg font-black text-slate-800 mb-2 uppercase tracking-tight leading-tight">
+                <h3 className={`text-lg font-black mb-2 uppercase tracking-tight leading-tight ${type === 'error' ? 'text-red-500' : 'text-slate-800 dark:text-slate-100'}`}>
                     {title}
                 </h3>
 

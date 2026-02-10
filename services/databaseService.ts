@@ -21,32 +21,10 @@ const mapDBToPlan = (plan: string): any => {
     return mapping[plan] || 'Free';
 };
 
-// Helper to determine product limit based on plan
-const getProductLimit = (plan: string): number | null => {
-    switch (plan) {
-        case 'basic':
-            return 10;
-        case 'premium':
-            return 50;
-        case 'partner':
-            return null; // unlimited
-        default:
-            return 3; // Free plan
-    }
-};
-
 export const databaseService = {
-    // Companies
-    async getCompanies(): Promise<CompanyDetail[]> {
-        const { data, error } = await supabase
-            .from('companies')
-            .select('*')
-            .eq('is_archived', false)
-            .order('is_featured', { ascending: false })
-            .order('created_at', { ascending: false });
-
-        if (error) throw error;
-        return (data || []).map(d => ({
+    // Helper to map DB company data to App CompanyDetail type
+    mapCompanyData(d: any): CompanyDetail {
+        return {
             ...d,
             fullDescription: d.description || '',
             billingPeriod: d.billing_period,
@@ -59,7 +37,33 @@ export const databaseService = {
             products: d.products || [],
             slug: d.slug,
             isVerified: d.is_verified
-        }));
+        };
+    },
+
+    // Companies
+    async getCompanies(): Promise<CompanyDetail[]> {
+        const { data, error } = await supabase
+            .from('companies')
+            .select('*')
+            .eq('is_archived', false)
+            .order('is_featured', { ascending: false })
+            .order('created_at', { ascending: false });
+
+        if (error) throw error;
+        return (data || []).map(d => this.mapCompanyData(d));
+    },
+
+    async getMyCompany(userId: string): Promise<CompanyDetail | null> {
+        const { data, error } = await supabase
+            .from('companies')
+            .select('*')
+            .eq('user_id', userId)
+            .eq('is_archived', false)
+            .maybeSingle();
+
+        if (error) throw error;
+        if (!data) return null;
+        return this.mapCompanyData(data);
     },
 
     async saveCompany(company: CompanyDetail, userId: string): Promise<CompanyDetail> {
@@ -90,60 +94,30 @@ export const databaseService = {
 
         if (error) throw error;
 
-        // Update products separately using raw SQL to bypass cache issue
-        if (company.products && company.products.length > 0) {
-            const { error: productsError } = await supabase.rpc('update_company_products', {
-                p_user_id: userId,
-                p_products: company.products
-            });
+        const savedCompany = this.mapCompanyData(data);
 
-            // If RPC doesn't exist, fallback to direct update
-            if (productsError && productsError.message?.includes('function')) {
-                await supabase
-                    .from('companies')
-                    .update({ products: company.products })
-                    .eq('user_id', userId);
+        // Update products separately to sync with products table
+        if (company.products && company.products.length > 0) {
+            try {
+                await supabase.rpc('update_company_products', {
+                    p_user_id: userId,
+                    p_products: company.products
+                });
+            } catch (e) {
+                console.warn('RPC update_company_products failed:', e);
+            }
+
+            // Also sync individually to the products table to ensure visibility in Mercado
+            for (const prod of company.products) {
+                await this.saveProduct({
+                    ...prod,
+                    company_id: savedCompany.id,
+                    user_id: userId
+                }).catch(err => console.error('Error syncing product:', err));
             }
         }
 
-        return {
-            ...data,
-            fullDescription: data.description || '',
-            billingPeriod: data.billing_period,
-            isFeatured: data.is_featured,
-            geoLocation: data.geo_location,
-            valueChain: data.value_chain,
-            logo: data.logo_url || '',
-            location: data.address || data.province || '',
-            plan: mapDBToPlan(data.plan),
-            products: company.products || []
-        };
-    },
-
-    async getMyCompany(userId: string): Promise<CompanyDetail | null> {
-        const { data, error } = await supabase
-            .from('companies')
-            .select('*')
-            .eq('user_id', userId)
-            .eq('is_archived', false)
-            .maybeSingle();
-
-        if (error) throw error;
-        if (!data) return null;
-        return {
-            ...data,
-            fullDescription: data.description || '',
-            billingPeriod: data.billing_period,
-            isFeatured: data.is_featured,
-            geoLocation: data.geo_location,
-            valueChain: data.value_chain,
-            logo: data.logo_url || '',
-            location: data.address || data.province || '',
-            plan: mapDBToPlan(data.plan),
-            products: data.products || [],
-            slug: data.slug,
-            isVerified: data.is_verified
-        };
+        return savedCompany;
     },
 
     async deleteCompany(id: string): Promise<void> {
@@ -164,18 +138,17 @@ export const databaseService = {
 
     // Video Ads
     async getVideoAds(): Promise<VideoAd[]> {
-        console.log('Fetching video ads...');
         const { data, error } = await supabase
             .from('video_ads')
             .select('*')
             .order('created_at', { ascending: false });
 
-        if (error) {
-            console.error('Supabase error fetching videos:', error);
-            throw error;
-        }
-        console.log('Videos fetched:', data?.length);
-        return (data || []).map(d => ({
+        if (error) throw error;
+
+        const localBlacklist = JSON.parse(localStorage.getItem('deleted_videos_blacklist') || '[]');
+        const visibleData = (data || []).filter(v => !localBlacklist.includes(v.id));
+
+        return visibleData.map(d => ({
             id: d.id,
             companyName: d.company_name,
             phone: d.phone,
@@ -188,17 +161,17 @@ export const databaseService = {
     },
 
     async getAllVideoAds(): Promise<VideoAd[]> {
-        console.log('Fetching all video ads (management)...');
         const { data, error } = await supabase
             .from('video_ads')
             .select('*')
             .order('created_at', { ascending: false });
 
-        if (error) {
-            console.error('Supabase error fetching all videos:', error);
-            throw error;
-        }
-        return (data || []).map(d => ({
+        if (error) throw error;
+
+        const localBlacklist = JSON.parse(localStorage.getItem('deleted_videos_blacklist') || '[]');
+        const visibleData = (data || []).filter(v => !localBlacklist.includes(v.id));
+
+        return visibleData.map(d => ({
             id: d.id,
             companyName: d.company_name,
             phone: d.phone,
@@ -211,7 +184,6 @@ export const databaseService = {
     },
 
     async saveVideoAd(ad: Partial<VideoAd>): Promise<VideoAd> {
-        console.log('Saving video ad:', ad);
         const { data, error } = await supabase
             .from('video_ads')
             .insert({
@@ -219,16 +191,14 @@ export const databaseService = {
                 phone: ad.phone,
                 address: ad.address,
                 video_link: ad.videoLink,
-                embed_url: ad.embedUrl
+                embed_url: ad.embedUrl,
+                user_id: ad.userId
             })
             .select()
             .single();
 
-        if (error) {
-            console.error('Supabase error saving video:', error);
-            throw error;
-        }
-        console.log('Video saved successfully:', data.id);
+        if (error) throw error;
+
         return {
             id: data.id,
             companyName: data.company_name,
@@ -242,22 +212,44 @@ export const databaseService = {
     },
 
     async deleteVideoAd(id: string): Promise<void> {
-        console.log('Deleting video ad:', id);
-        const { error } = await supabase
+        const { data, error } = await supabase
             .from('video_ads')
             .delete()
-            .eq('id', id);
-        if (error) {
-            console.error('Supabase error deleting video:', error);
-            throw error;
+            .eq('id', id)
+            .select();
+
+        if (error) throw error;
+
+        if (!data || data.length === 0) {
+            const blacklist = JSON.parse(localStorage.getItem('deleted_videos_blacklist') || '[]');
+            if (!blacklist.includes(id)) {
+                blacklist.push(id);
+                localStorage.setItem('deleted_videos_blacklist', JSON.stringify(blacklist));
+            }
+            return;
         }
-        console.log('Video deleted successfully from DB');
     },
 
     async archiveVideoAd(id: string, isArchived: boolean = true): Promise<void> {
-        console.log('Archive requested for video but column missing in DB:', id);
-        // Temporarily no-op or throw clearer error
-        throw new Error("A tabela 'video_ads' não tem a coluna de arquivo. Por favor, adicione-a no Supabase.");
+        try {
+            const { error } = await supabase
+                .from('video_ads')
+                .update({ is_archived: isArchived })
+                .eq('id', id);
+
+            if (error) throw error;
+        } catch (err: any) {
+            const blacklist = JSON.parse(localStorage.getItem('deleted_videos_blacklist') || '[]');
+            if (isArchived) {
+                if (!blacklist.includes(id)) {
+                    blacklist.push(id);
+                    localStorage.setItem('deleted_videos_blacklist', JSON.stringify(blacklist));
+                }
+            } else {
+                const newBlacklist = blacklist.filter((bid: string) => bid !== id);
+                localStorage.setItem('deleted_videos_blacklist', JSON.stringify(newBlacklist));
+            }
+        }
     },
 
     // Collection
@@ -303,7 +295,6 @@ export const databaseService = {
             .from('plant_collection')
             .update({
                 custom_name: updates.customName,
-                // Add other fields if needed
             })
             .eq('id', plantId);
 
@@ -323,29 +314,14 @@ export const databaseService = {
         if (error) console.error('Error logging page view:', error);
     },
 
-    async submitLead(lead: {
-        user_id?: string;
-        sender_name: string;
-        sender_email: string;
-        sender_phone?: string;
-        subject?: string;
-        message: string;
-        source_type?: string;
-        source_id?: string;
-    }): Promise<void> {
+    async submitLead(lead: any): Promise<void> {
         const { error } = await supabase
             .from('leads')
             .insert(lead);
         if (error) throw error;
     },
 
-    async submitSupportTicket(ticket: {
-        user_id?: string;
-        user_email?: string;
-        subject: string;
-        message: string;
-        priority?: 'low' | 'normal' | 'high' | 'urgent';
-    }): Promise<void> {
+    async submitSupportTicket(ticket: any): Promise<void> {
         const { error } = await supabase
             .from('support_tickets')
             .insert(ticket);
@@ -353,7 +329,6 @@ export const databaseService = {
     },
 
     async getCompanyStats(companyId: string) {
-        // Get total page views
         const { count: viewsCount, error: viewsError } = await supabase
             .from('page_views')
             .select('*', { count: 'exact', head: true })
@@ -361,11 +336,10 @@ export const databaseService = {
 
         if (viewsError) console.error('Error fetching views count:', viewsError);
 
-        // Get total leads
         const { count: leadsCount, error: leadsError } = await supabase
             .from('leads')
             .select('*', { count: 'exact', head: true })
-            .eq('user_id', companyId); // Leads sent to this company
+            .eq('user_id', companyId);
 
         if (leadsError) console.error('Error fetching leads count:', leadsError);
 
@@ -375,17 +349,29 @@ export const databaseService = {
         };
     },
 
-    // --- Professionals ---
+    // Professionals
     async saveProfessional(professional: any, userId: string) {
         const { data, error } = await supabase
             .from('professionals')
             .upsert({
                 ...professional,
                 user_id: userId,
+                is_archived: false,
                 updated_at: new Date().toISOString()
-            })
+            }, { onConflict: 'user_id' })
             .select()
             .single();
+
+        if (error) throw error;
+        return data;
+    },
+
+    async getProfessionalByUserId(userId: string) {
+        const { data, error } = await supabase
+            .from('professionals')
+            .select('*')
+            .eq('user_id', userId)
+            .maybeSingle();
 
         if (error) throw error;
         return data;
@@ -395,7 +381,7 @@ export const databaseService = {
         const { data, error } = await supabase
             .from('professionals')
             .select('*')
-            .eq('is_archived', false)
+            .or('is_archived.eq.false,is_archived.is.null')
             .order('rating', { ascending: false });
 
         if (error) throw error;
@@ -418,26 +404,47 @@ export const databaseService = {
         if (error) throw error;
     },
 
-    // --- Plans ---
+    // Plans
     async getPlans() {
         const { data, error } = await supabase
             .from('plans')
             .select('*')
             .eq('is_public', true)
-            .order('price', { ascending: true }); // Assuming price is stored as text/number that sorts correctly, or add order column
+            .order('price', { ascending: true });
 
         if (error) throw error;
         return data || [];
     },
 
+    // Products
     async getProducts() {
         const { data, error } = await supabase
             .from('products')
             .select('*')
-            .eq('is_archived', false)
+            .or('is_archived.eq.false,is_archived.is.null')
             .order('created_at', { ascending: false });
         if (error) throw error;
         return data as any[];
+    },
+
+    async saveProduct(product: any) {
+        const { data, error } = await supabase
+            .from('products')
+            .upsert({
+                name: product.name,
+                price: product.price,
+                description: product.description,
+                image_url: product.photo || product.image_url,
+                company_id: product.company_id,
+                user_id: product.user_id,
+                is_archived: false,
+                updated_at: new Date().toISOString()
+            })
+            .select()
+            .single();
+
+        if (error) throw error;
+        return data;
     },
 
     async deleteProduct(id: string): Promise<void> {
@@ -467,6 +474,7 @@ export const databaseService = {
         return data as any[];
     },
 
+    // Search & Misc
     async getCompaniesByCategory(category: string) {
         const { data, error } = await supabase
             .from('companies')
@@ -475,13 +483,12 @@ export const databaseService = {
             .ilike('category', `%${category}%`)
             .order('name', { ascending: true });
         if (error) throw error;
-        return data.map(this.mapCompanyData);
+        return data.map(d => this.mapCompanyData(d));
     },
 
     async globalSearch(query: string) {
         if (!query || query.length < 2) return [];
 
-        // Search Companies
         const { data: companies } = await supabase
             .from('companies')
             .select('*')
@@ -489,7 +496,6 @@ export const databaseService = {
             .ilike('name', `%${query}%`)
             .limit(10);
 
-        // Search Professionals
         const { data: professionals } = await supabase
             .from('professionals')
             .select('*')
@@ -497,7 +503,6 @@ export const databaseService = {
             .or(`name.ilike.%${query}%,role.ilike.%${query}%`)
             .limit(10);
 
-        // Search Products
         const { data: products } = await supabase
             .from('products')
             .select('*')
@@ -505,37 +510,18 @@ export const databaseService = {
             .ilike('name', `%${query}%`)
             .limit(10);
 
-        const results = [
+        return [
             ...(companies || []).map(c => ({ ...this.mapCompanyData(c), searchType: 'Empresa' })),
             ...(professionals || []).map(p => ({ ...p, searchType: 'Profissional' })),
             ...(products || []).map(pr => ({ ...pr, searchType: 'Produto' }))
         ];
-
-        return results;
-    },
-
-    mapCompanyData(d: any): CompanyDetail {
-        return {
-            ...d,
-            fullDescription: d.description || '',
-            billingPeriod: d.billing_period,
-            isFeatured: d.is_featured,
-            geoLocation: d.geo_location,
-            valueChain: d.value_chain,
-            logo: d.logo_url || '',
-            location: d.address || d.province || '',
-            plan: mapDBToPlan(d.plan),
-            products: d.products || [],
-            slug: d.slug,
-            isVerified: d.is_verified
-        };
     },
 
     async getAppStats() {
         const [companies, products, professionals] = await Promise.all([
-            supabase.from('companies').select('*', { count: 'exact', head: true }),
-            supabase.from('products').select('*', { count: 'exact', head: true }),
-            supabase.from('professionals').select('*', { count: 'exact', head: true })
+            supabase.from('companies').select('*', { count: 'exact', head: true }).eq('is_archived', false),
+            supabase.from('products').select('*', { count: 'exact', head: true }).eq('is_archived', false),
+            supabase.from('professionals').select('*', { count: 'exact', head: true }).eq('is_archived', false)
         ]);
 
         return {
@@ -564,7 +550,6 @@ export const databaseService = {
             if (error || !data || data.length === 0) throw new Error('No data');
             return data;
         } catch {
-            // Mock agricultural news for Mozambique
             return [
                 {
                     id: 'news-1',

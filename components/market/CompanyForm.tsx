@@ -266,10 +266,10 @@ const CompanyForm: React.FC<CompanyFormProps> = ({ initialData, onSubmit, onClos
                                 {isEnterprise ? (
                                     <>
                                         <option value="" disabled>Seleccione o sector</option>
-                                        <option value="Consumidor">Consumidor</option>
-                                        <option value="Produtor">Produtor</option>
-                                        <option value="Fornecedor">Fornecedor</option>
-                                        <option value="Serviços">Serviços</option>
+                                        <option value="Consumidores">Consumidores</option>
+                                        <option value="Produtores">Produtores</option>
+                                        <option value="Fornecedores">Fornecedores</option>
+                                        <option value="Maquinaria">Maquinaria</option>
                                         <option value="Agro-negócio">Agro-negócio</option>
                                         <option value="Outros">Outros</option>
                                     </>

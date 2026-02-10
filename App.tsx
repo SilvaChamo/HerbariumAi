@@ -66,6 +66,7 @@ const App: React.FC = () => {
   // Controle de Dashboard
   const [showDashboard, setShowDashboard] = useState(false);
   const [myCompany, setMyCompany] = useState<CompanyDetail | null>(null);
+  const [myProfessional, setMyProfessional] = useState<Professional | null>(null);
   const [featuredCompanies, setFeaturedCompanies] = useState<CompanyDetail[]>([]);
   const [recentProducts, setRecentProducts] = useState<MarketProduct[]>([]);
   const [featuredProfessionals, setFeaturedProfessionals] = useState<Professional[]>([]);
@@ -73,6 +74,7 @@ const App: React.FC = () => {
   const [isDbOnline, setIsDbOnline] = useState(true);
   const [isSearchVisible, setIsSearchVisible] = useState(false);
   const [showAccountCollections, setShowAccountCollections] = useState(false);
+  const [companyStats, setCompanyStats] = useState<{ views: number; leads: number } | null>(null);
 
   const [currentSlide, setCurrentSlide] = useState(0);
   const [pendingRegister, setPendingRegister] = useState(false);
@@ -85,15 +87,17 @@ const App: React.FC = () => {
     type: 'info'
   });
 
+  const [activeNewsTab, setActiveNewsTab] = useState<'news' | 'alerts'>('news');
+
   // Carregar dados iniciais e monitorar autenticação
   useEffect(() => {
     databaseService.getCompanies().then(setFeaturedCompanies).catch(console.error);
 
     // 1.1 Carregar Produtos Recentes
-    databaseService.getProducts().then(prods => setRecentProducts(prods.slice(0, 6))).catch(console.error);
+    databaseService.getProducts().then(setRecentProducts).catch(console.error);
 
     // 1.2 Carregar Profissionais em Destaque
-    databaseService.getProfessionals().then(profs => setFeaturedProfessionals(profs.slice(0, 6))).catch(console.error);
+    databaseService.getProfessionals().then(setFeaturedProfessionals).catch(console.error);
 
     // 2. Carregar Spots de Vídeo
     databaseService.getVideoAds()
@@ -198,25 +202,31 @@ const App: React.FC = () => {
     };
   }, [user]);
 
-  // Efeito para trocar vídeos da playlist automaticamente
+  // Efeito para carregar vídeos da playlist (rotação automática removida para permitir playback completo)
   useEffect(() => {
     if (adVideos.length <= 1) return;
-
-    const interval = setInterval(() => {
-      setCurrentVideoIndex(prev => (prev + 1) % adVideos.length);
-    }, 30000); // Troca a cada 30 segundos
-
-    return () => clearInterval(interval);
+    // A troca de vídeos agora deve ser manual ou baseada no fim do vídeo (implementação futura se necessário)
   }, [adVideos]);
+
+  // Efeito para carregar estatísticas da empresa quando o dashboard é aberto
+  useEffect(() => {
+    if (showDashboard && myCompany?.id) {
+      databaseService.getCompanyStats(myCompany.id)
+        .then(setCompanyStats)
+        .catch(console.error);
+    }
+  }, [showDashboard, myCompany?.id]);
 
   const loadUserData = async (userId: string) => {
     try {
-      const [userCollection, userCompany] = await Promise.all([
+      const [userCollection, userCompany, userProfessional] = await Promise.all([
         databaseService.getCollection(userId),
-        databaseService.getMyCompany(userId)
+        databaseService.getMyCompany(userId),
+        databaseService.getProfessionalByUserId(userId)
       ]);
       setCollection(userCollection);
       setMyCompany(userCompany);
+      setMyProfessional(userProfessional);
     } catch (err) {
       console.error("Erro ao carregar dados do usuário:", err);
     }
@@ -315,14 +325,8 @@ const App: React.FC = () => {
     setLoading(true);
     setActiveCategory(category);
     try {
-      if (category === 'Alertas') {
-        const results = [
-          { id: 'sms-alerts', name: 'Ativação de Alertas SMS', activity: 'Serviço de Mensagens', searchType: 'Alertas', icon: 'fa-comment-sms' },
-          { id: 'inbox-alerts', name: 'Inbox de SMS', activity: 'Histórico de Alertas', searchType: 'Alertas', icon: 'fa-inbox' },
-          { id: 'settings-alerts', name: 'Configurações de Alertas', activity: 'Personalização', searchType: 'Alertas', icon: 'fa-gears' }
-        ];
-        setFilteredResults(results);
-      } else if (category === 'Dicas & Notícias' || category === 'Notícias') {
+      if (category === 'Dicas & Notícias' || category === 'Notícias') {
+        setActiveNewsTab('news');
         const results = await databaseService.getNews();
         setFilteredResults(results);
       } else if (category === 'Empresas' || category === 'Lojas de Insumos') {
@@ -333,6 +337,9 @@ const App: React.FC = () => {
         setFilteredResults(results);
       } else if (category === 'Produtos') {
         const results = await databaseService.getProducts();
+        setFilteredResults(results);
+      } else if (category === 'Agro-negócios') {
+        const results = await databaseService.getCompaniesByCategory('Agro-negócios');
         setFilteredResults(results);
       } else {
         const results = await databaseService.getCompaniesByCategory(category);
@@ -358,10 +365,39 @@ const App: React.FC = () => {
     }
   }, []);
 
-  const handleAdminAction = async (e: React.MouseEvent, action: 'edit' | 'archive' | 'delete', item: any) => {
+  const handleAdminAction = async (e: React.MouseEvent, action: 'edit' | 'archive' | 'delete' | 'notify', item: any) => {
     e.stopPropagation();
     const type = item.company_id || item.searchType === 'Produto' ? 'product' :
       (item.category === 'Profissional' || item.searchType === 'Profissional' ? 'professional' : 'company');
+
+    if (action === 'notify') {
+      const phone = item.contact || item.whatsapp || item.phone || item.phone_number;
+      if (!phone) {
+        setDialog({ isOpen: true, title: 'Erro', message: 'Nenhum contacto encontrado para este registo.', type: 'error' });
+        return;
+      }
+
+      // Lógica de Escalacionamento de Notificações
+      const registry = JSON.parse(localStorage.getItem('admin_notification_registry') || '{}');
+      const count = registry[item.id] || 0;
+
+      let messageText = '';
+      if (count === 0) {
+        messageText = `Olá, ${item.name}. Detectamos uma anomalia no seu registo na plataforma Botânica. Pedimos que ajuste pessoalmente a informação para que esteja em conformidade com as nossas diretrizes.`;
+      } else if (count === 1) {
+        messageText = `Lembrete: A anomalia no registo [${item.name}] ainda não foi corrigida. Por favor, pedimos que execute o ajuste pessoalmente o quanto antes para evitar a suspensão do item.`;
+      } else {
+        messageText = `AVISO FINAL: A retificação do registo [${item.name}] não foi executada após múltiplos avisos. Caso não seja feita a intervenção imediata, o item será eliminado da plataforma Botânica definitivamente.`;
+      }
+
+      // Incrementar e guardar no registo
+      registry[item.id] = count + 1;
+      localStorage.setItem('admin_notification_registry', JSON.stringify(registry));
+
+      const encodedMsg = encodeURIComponent(messageText);
+      window.open(`https://wa.me/${phone.replace(/\D/g, '')}?text=${encodedMsg}`, '_blank');
+      return;
+    }
 
     if (action === 'delete') {
       if (!window.confirm(`Tem certeza que deseja ELIMINAR permanentemente: ${item.name}?`)) return;
@@ -427,12 +463,22 @@ const App: React.FC = () => {
   }, []);
 
   const handleTabChange = useCallback((tab: AppTab) => {
-    setActiveTab(tab);
-    setShowDashboard(tab === AppTab.ACCOUNT ? false : showDashboard);
-    setShowAccountCollections(false); // Reset when tab changes
-    setViewingCompany(null);
-    setShowCompanyForm(false);
-  }, [showDashboard]);
+    if (activeTab === tab) {
+      setActiveCategory(null);
+      setFilteredResults([]);
+      setViewingCompany(null);
+      setViewingProduct(null);
+      setViewingProfessional(null);
+      setViewingNews(null);
+    } else {
+      setActiveTab(tab);
+      setShowDashboard(tab === AppTab.ACCOUNT ? false : showDashboard);
+      setShowAccountCollections(false);
+      setViewingCompany(null);
+      setShowCompanyForm(false);
+      setShowProfessionalForm(false);
+    }
+  }, [activeTab, showDashboard]);
 
   const handleInstallClick = async () => {
     if (!deferredPrompt) {
@@ -532,6 +578,7 @@ const App: React.FC = () => {
         {showDashboard && myCompany ? (
           <MarketDashboard
             company={myCompany}
+            stats={companyStats || undefined}
             onClose={() => setShowDashboard(false)}
             onEdit={() => { setShowDashboard(false); setShowCompanyForm(true); }}
           />
@@ -554,8 +601,54 @@ const App: React.FC = () => {
                     <h2 className="text-lg font-black text-slate-700 dark:text-slate-100 leading-none">{activeCategory}</h2>
                   </div>
                 </div>
-                <div className="bg-emerald-50 dark:bg-emerald-900/30 px-3 py-1 rounded-full border border-emerald-100 dark:border-emerald-800/50">
-                  <span className="text-[10px] font-black text-emerald-600 dark:text-emerald-500">{filteredResults.length} Encontrados</span>
+                <div className="flex items-center gap-2">
+                  {activeCategory === 'Empresas' && (
+                    <button
+                      onClick={() => {
+                        if (user) setShowCompanyForm(true);
+                        else {
+                          setPendingRegister(true);
+                          setActiveTab(AppTab.AUTH);
+                        }
+                      }}
+                      className="bg-emerald-600 hover:bg-emerald-500 text-white px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-tighter shadow-sm transition-all active:scale-95"
+                    >
+                      Registar Empresa
+                    </button>
+                  )}
+                  {activeCategory === 'Profissionais' && (
+                    <button
+                      onClick={() => {
+                        if (user) setShowProfessionalForm(true);
+                        else {
+                          setPendingRegister(true);
+                          setActiveTab(AppTab.AUTH);
+                        }
+                      }}
+                      className="bg-orange-500 hover:bg-orange-400 text-white px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-tighter shadow-sm transition-all active:scale-95"
+                    >
+                      Registar Talento
+                    </button>
+                  )}
+                  {activeCategory === 'Produtos' && (
+                    <button
+                      onClick={() => {
+                        if (user) {
+                          if (myCompany) setShowDashboard(true);
+                          else setShowCompanyForm(true);
+                        } else {
+                          setPendingRegister(true);
+                          setActiveTab(AppTab.AUTH);
+                        }
+                      }}
+                      className="bg-emerald-600 hover:bg-emerald-500 text-white px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-tighter shadow-sm transition-all active:scale-95"
+                    >
+                      Vender Produto
+                    </button>
+                  )}
+                  <div className="bg-emerald-50 dark:bg-emerald-900/30 px-3 py-1 rounded-full border border-emerald-100 dark:border-emerald-800/50">
+                    <span className="text-[10px] font-black text-emerald-600 dark:text-emerald-500 whitespace-nowrap">{filteredResults.length} Encontrados</span>
+                  </div>
                 </div>
               </div>
             )}
@@ -592,7 +685,7 @@ const App: React.FC = () => {
                   <h3 className="text-[11px] font-black uppercase text-emerald-600 dark:text-emerald-500 tracking-widest">Profissionais em Destaque</h3>
                 </div>
                 <div className="grid grid-cols-1 gap-3">
-                  {featuredProfessionals.slice(0, 2).map((prof) => (
+                  {featuredProfessionals.map((prof) => (
                     <div
                       key={prof.id}
                       onClick={() => setViewingProfessional(prof)}
@@ -616,8 +709,40 @@ const App: React.FC = () => {
               </div>
             )}
 
+            {/* Tabs for News & Alertas */}
+            {!loading && (activeCategory === 'Dicas & Notícias' || activeCategory === 'Notícias') && (
+              <div className="px-6 py-2 bg-white dark:bg-slate-900 border-b border-slate-100 dark:border-slate-800 flex gap-4">
+                <button
+                  onClick={async () => {
+                    setActiveNewsTab('news');
+                    setLoading(true);
+                    const results = await databaseService.getNews();
+                    setFilteredResults(results);
+                    setLoading(false);
+                  }}
+                  className={`pb-2 text-[10px] font-black uppercase tracking-widest transition-all border-b-2 ${activeNewsTab === 'news' ? 'text-emerald-600 border-emerald-600' : 'text-slate-400 border-transparent'}`}
+                >
+                  Dicas & Notícias
+                </button>
+                <button
+                  onClick={() => {
+                    setActiveNewsTab('alerts');
+                    const results = [
+                      { id: 'sms-alerts', name: 'Ativação de Alertas SMS', activity: 'Serviço de Mensagens', searchType: 'Alertas', icon: 'fa-comment-sms' },
+                      { id: 'inbox-alerts', name: 'Inbox de SMS', activity: 'Histórico de Alertas', searchType: 'Alertas', icon: 'fa-inbox' },
+                      { id: 'settings-alerts', name: 'Configurações de Alertas', activity: 'Personalização', searchType: 'Alertas', icon: 'fa-gears' }
+                    ];
+                    setFilteredResults(results);
+                  }}
+                  className={`pb-2 text-[10px] font-black uppercase tracking-widest transition-all border-b-2 ${activeNewsTab === 'alerts' ? 'text-emerald-600 border-emerald-600' : 'text-slate-400 border-transparent'}`}
+                >
+                  Alertas Agro
+                </button>
+              </div>
+            )}
+
             {/* Results Grid */}
-            <div className="p-4 grid grid-cols-1 gap-4">
+            <div className={`p-4 grid grid-cols-1 gap-4 ${activeNewsTab === 'alerts' && (activeCategory === 'Dicas & Notícias' || activeCategory === 'Notícias') ? 'bg-slate-50 dark:bg-slate-900/50 min-h-[400px]' : ''}`}>
               {loading ? (
                 <SkeletonCard count={6} />
               ) : filteredResults.length > 0 ? (
@@ -655,6 +780,13 @@ const App: React.FC = () => {
                     {/* Admin Actions Overlay */}
                     {user?.isAdmin && (
                       <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                        <button
+                          onClick={(e) => handleAdminAction(e, 'notify', item)}
+                          className="w-7 h-7 rounded-full bg-emerald-500 flex items-center justify-center text-white shadow-lg transition-transform active:scale-90"
+                          title="Notificar Empresa"
+                        >
+                          <i className="fa-solid fa-paper-plane text-[9px]"></i>
+                        </button>
                         <button
                           onClick={(e) => handleAdminAction(e, 'archive', item)}
                           className={`w-7 h-7 rounded-full flex items-center justify-center text-white shadow-lg transition-transform active:scale-90 ${item.is_archived ? 'bg-emerald-500' : 'bg-slate-500'}`}
@@ -759,7 +891,7 @@ const App: React.FC = () => {
               <CompanyDetailView
                 company={viewingCompany}
                 onBack={() => setViewingCompany(null)}
-                onEdit={user.isAdmin ? () => {
+                onEdit={user?.isAdmin ? () => {
                   setViewingCompany(null);
                   setShowCompanyForm(true);
                 } : undefined}
@@ -772,7 +904,7 @@ const App: React.FC = () => {
                   setViewingProduct(null);
                   setViewingCompany(comp);
                 }}
-                onEdit={user.isAdmin ? () => {
+                onEdit={user?.isAdmin ? () => {
                   // Implement product direct edit if needed, for now use current flow
                   setViewingProduct(null);
                   setViewingCompany(myCompany || {} as any); // fallback or specific logic
@@ -791,39 +923,37 @@ const App: React.FC = () => {
             ) : (
               <div className="flex flex-col animate-in fade-in pb-10">
                 {/* Hero Slider (Architecture Mirror of Market) */}
-                <div className="aspect-video bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden relative group">
+                <div className="h-44 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden relative group">
                   {featuredCompanies.length > 0 ? (
                     featuredCompanies.map((emp, idx) => (
-                      <div key={idx} className={`absolute inset-0 p-6 flex flex-col justify-between transition-all duration-700 ${idx === currentSlide ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-10 pointer-events-none'}`}>
+                      <div key={idx} className={`absolute inset-0 p-5 flex flex-col justify-center transition-all duration-700 ${idx === currentSlide ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-10 pointer-events-none'}`}>
                         {/* Premium Badge top-right */}
-                        <div className="absolute top-6 right-6">
-                          <span className="px-2 py-1 bg-emerald-500 text-[9px] font-black text-white rounded uppercase tracking-widest shadow-sm">Premium</span>
+                        <div className="absolute top-4 right-5">
+                          <span className="px-2 py-0.5 bg-emerald-500 text-[8px] font-black text-white rounded uppercase tracking-widest shadow-sm">Premium</span>
                         </div>
 
-                        <div className="flex flex-col gap-2">
-                          <div className="w-full flex items-center justify-start">
+                        <div className="flex items-center gap-4">
+                          <div className="w-20 h-20 shrink-0 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-100 dark:border-slate-700 flex items-center justify-center p-2">
                             <img
                               src={emp.logo}
-                              className="max-h-16 max-w-[140px] object-contain"
+                              className="w-full h-full object-contain"
                               alt={emp.name}
                             />
                           </div>
-                          <div className="space-y-1 pr-12">
-                            <div>
-                              <h4 className="font-black text-slate-700 dark:text-slate-100 text-lg leading-tight break-words">{emp.name}</h4>
-                            </div>
-                            <p className="text-[11px] text-slate-500 dark:text-slate-400 font-bold tracking-tight leading-snug break-words">{emp.activity}</p>
-                            <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-1 font-medium flex items-center">
-                              <i className="fa-solid fa-location-dot mr-2 text-orange-500"></i> {emp.location}
+                          <div className="flex-1 min-w-0 space-y-0.5">
+                            <h4 className="font-black text-slate-700 dark:text-slate-100 text-sm leading-tight truncate uppercase">{emp.name}</h4>
+                            <p className="text-[10px] text-slate-500 dark:text-slate-400 font-bold tracking-tight leading-snug truncate">{emp.activity}</p>
+                            <p className="text-[9px] text-slate-400 dark:text-slate-500 mt-0.5 font-medium flex items-center">
+                              <i className="fa-solid fa-location-dot mr-1.5 text-orange-500"></i> {emp.location}
                             </p>
 
                             {/* Ver Perfil Text Link */}
                             <div
                               onClick={(e) => { e.stopPropagation(); setViewingCompany(emp); }}
-                              className="inline-flex items-center gap-2 mt-2 cursor-pointer group/link hover:opacity-80 transition-all"
+                              className="inline-flex items-center gap-1.5 mt-2 cursor-pointer group/link hover:opacity-80 transition-all"
                             >
-                              <span className="text-[10px] font-black text-emerald-600 dark:text-emerald-500 uppercase tracking-tighter border-b border-emerald-600/30 dark:border-emerald-500/30 group-hover/link:border-emerald-600 dark:group-hover/link:border-emerald-500 transition-all">Ver Perfil da Empresa</span>
-                              <i className="fa-solid fa-arrow-right text-[9px] text-emerald-600 dark:text-emerald-500 transition-transform group-hover/link:translate-x-1"></i>
+                              <span className="text-[9px] font-black text-emerald-600 dark:text-emerald-500 uppercase tracking-tighter border-b border-emerald-600/30 dark:border-emerald-500/30 group-hover/link:border-emerald-600 dark:group-hover/link:border-emerald-500 transition-all">Ver Perfil</span>
+                              <i className="fa-solid fa-arrow-right text-[8px] text-emerald-600 dark:text-emerald-500 transition-transform group-hover/link:translate-x-1"></i>
                             </div>
                           </div>
                         </div>
@@ -839,6 +969,30 @@ const App: React.FC = () => {
                         <p className="text-[9px] text-slate-300 dark:text-slate-600 font-bold uppercase mt-1">Seja o primeiro a aparecer aqui</p>
                       </div>
                     </div>
+                  )}
+
+                  {/* Navigation Arrows (Visible on hover) */}
+                  {featuredCompanies.length > 1 && (
+                    <>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setCurrentSlide(prev => (prev - 1 + featuredCompanies.length) % featuredCompanies.length);
+                        }}
+                        className="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-white/80 dark:bg-slate-800/80 border border-slate-200/50 dark:border-slate-700/50 flex items-center justify-center text-slate-600 dark:text-slate-300 opacity-0 group-hover:opacity-100 transition-all z-10 hover:bg-emerald-500 hover:text-white hover:border-emerald-500 active:scale-90"
+                      >
+                        <i className="fa-solid fa-chevron-left text-xs"></i>
+                      </button>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setCurrentSlide(prev => (prev + 1) % featuredCompanies.length);
+                        }}
+                        className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-white/80 dark:bg-slate-800/80 border border-slate-200/50 dark:border-slate-700/50 flex items-center justify-center text-slate-600 dark:text-slate-300 opacity-0 group-hover:opacity-100 transition-all z-10 hover:bg-emerald-500 hover:text-white hover:border-emerald-500 active:scale-90"
+                      >
+                        <i className="fa-solid fa-chevron-right text-xs"></i>
+                      </button>
+                    </>
                   )}
                 </div>
 
@@ -867,22 +1021,60 @@ const App: React.FC = () => {
 
 
                 {/* Discover Categories Section */}
-                <div className="px-6 space-y-3 mt-8 pb-3">
+                <div className="px-6 space-y-3 mt-8">
                   <div className="grid grid-cols-2 gap-3">
-                    {['Empresas', 'Produtos', 'Profissionais', 'Dicas & Notícias'].map(cat => (
+                    {['Empresas', 'Produtos', 'Profissionais', 'Dicas & Notícias', ...(user?.isAdmin ? ['Vídeos'] : [])].map(cat => (
                       <button
                         key={cat}
-                        onClick={() => handleCategoryClick(cat)}
+                        onClick={() => {
+                          if (cat === 'Vídeos') setShowVideoManagement(true);
+                          else handleCategoryClick(cat);
+                        }}
                         className="bg-white dark:bg-[#1a1f2c] border border-slate-200 dark:border-slate-700 p-4 rounded-2xl flex flex-col items-center gap-3 hover:border-orange-400 transition-all hover:shadow-lg hover:shadow-slate-100 dark:hover:shadow-none group active:scale-95"
                       >
                         <div className="w-12 h-12 bg-emerald-50 dark:bg-emerald-900/20 text-[#10b981] dark:text-emerald-500 group-hover:bg-orange-500 group-hover:text-white rounded-2xl flex items-center justify-center text-xl transition-all shadow-sm">
-                          <i className={`fa-solid ${cat === 'Empresas' ? 'fa-building' : cat === 'Produtos' ? 'fa-box' : cat === 'Profissionais' ? 'fa-user' : 'fa-newspaper'}`}></i>
+                          <i className={`fa-solid ${cat === 'Empresas' ? 'fa-building' : cat === 'Produtos' ? 'fa-box' : cat === 'Profissionais' ? 'fa-user' : cat === 'Vídeos' ? 'fa-film' : 'fa-newspaper'}`}></i>
                         </div>
                         <span className="font-bold text-slate-700 dark:text-slate-100 text-[11px] uppercase tracking-tight">{cat}</span>
                       </button>
                     ))}
                   </div>
                 </div>
+
+                {/* Showcase Professionals Section */}
+                {featuredProfessionals.length > 0 && (
+                  <div className="mt-8 space-y-4">
+                    <div className="px-6 flex items-center justify-between">
+                      <h3 className="text-xs font-black uppercase text-slate-400 dark:text-slate-500 tracking-widest leading-none">Profissionais Especialistas</h3>
+                      <button onClick={() => handleCategoryClick('Profissionais')} className="text-[10px] font-black text-emerald-600 dark:text-emerald-500 uppercase tracking-tighter">Ver Todos</button>
+                    </div>
+                    <div className="flex gap-4 overflow-x-auto pb-6 px-6 scrollbar-none">
+                      {featuredProfessionals.map((prof) => (
+                        <div
+                          key={prof.id}
+                          onClick={() => setViewingProfessional(prof)}
+                          className="w-48 shrink-0 bg-white dark:bg-[#1a1f2c] p-4 rounded-3xl border border-slate-100 dark:border-slate-800 flex flex-col items-center text-center space-y-3 hover:border-orange-400 transition-all cursor-pointer shadow-sm group"
+                        >
+                          <div className="w-16 h-16 rounded-2xl bg-slate-50 dark:bg-slate-800 overflow-hidden shrink-0 border border-slate-100 dark:border-slate-700 flex items-center justify-center">
+                            {prof.image_url ? (
+                              <img src={prof.image_url} className="w-full h-full object-cover group-hover:scale-110 transition-transform" alt={prof.name} />
+                            ) : (
+                              <i className="fa-solid fa-user text-2xl text-slate-200 dark:text-slate-700"></i>
+                            )}
+                          </div>
+                          <div className="space-y-1 w-full overflow-hidden">
+                            <h4 className="text-[11px] font-black text-slate-800 dark:text-white truncate uppercase tracking-tight">{prof.name}</h4>
+                            <p className="text-[9px] text-emerald-600 dark:text-emerald-500 font-bold uppercase truncate">{prof.role || prof.profession}</p>
+                          </div>
+                          <div className="flex items-center gap-2 pt-1">
+                            <i className="fa-solid fa-star text-[9px] text-yellow-500"></i>
+                            <span className="text-[9px] text-slate-400 font-black">{prof.rating || '5.0'}</span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </div>
@@ -897,8 +1089,9 @@ const App: React.FC = () => {
             <div className="">
               <div className="aspect-video bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden flex flex-col relative group">
                 <iframe
+                  key={adVideos[currentVideoIndex]} // Forçar recarregamento ao mudar vídeo
                   className="w-full h-full"
-                  src={`${adVideos[currentVideoIndex]}?autoplay=1&mute=0&controls=0&modestbranding=1&loop=1&playlist=${adVideos[currentVideoIndex].split('/').pop()}&start=0&end=30`}
+                  src={`${adVideos[currentVideoIndex]}?autoplay=1&mute=0&controls=1&modestbranding=1&loop=1&playlist=${adVideos[currentVideoIndex].split('/').pop()}`}
                   title="Publicidade em Vídeo"
                   frameBorder="0"
                   allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
@@ -930,7 +1123,7 @@ const App: React.FC = () => {
                   { label: 'Produtores', icon: 'fa-seedling', color: 'text-emerald-500' },
                   { label: 'Consumidores', icon: 'fa-user-tag', color: 'text-orange-500' },
                   { label: 'Profissionais', icon: 'fa-user-tie', color: 'text-emerald-500' },
-                  { label: 'Alertas', icon: 'fa-bell', color: 'text-emerald-500' },
+                  { label: 'Agro-negócios', icon: 'fa-wheat-awn', color: 'text-emerald-500' },
                   { label: 'Maquinaria', icon: 'fa-tractor', color: 'text-emerald-500' }
                 ].map(cat => (
                   <button key={cat.label} onClick={() => handleCategoryClick(cat.label)} className="bg-white dark:bg-[#1a1f2c] border border-slate-200 dark:border-slate-700/50 p-6 rounded-2xl flex flex-col items-center gap-4 hover:border-orange-400 transition-all group active:scale-95 shadow-sm">
@@ -956,6 +1149,7 @@ const App: React.FC = () => {
             <AccountDashboard
               user={user}
               company={myCompany}
+              professional={myProfessional}
               onLogout={handleLogout}
               collection={collection}
               onViewPlant={setSelectedPlant}
@@ -977,6 +1171,12 @@ const App: React.FC = () => {
               onRegisterCompany={() => {
                 setActiveTab(AppTab.DISCOVER);
                 setShowCompanyForm(true);
+              }}
+              onEditProfessional={() => {
+                setShowProfessionalForm(true);
+              }}
+              onRegisterProfessional={() => {
+                setShowProfessionalForm(true);
               }}
             />
           ) : (
