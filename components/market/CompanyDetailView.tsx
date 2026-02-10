@@ -206,7 +206,7 @@ const CompanyDetailView: React.FC<CompanyDetailViewProps> = ({ company, onBack }
                                 <i className="fa-solid fa-circle-notch fa-spin text-emerald-500 text-xl"></i>
                                 <p className="text-[10px] text-slate-400 font-bold mt-2 uppercase">A sincronizar produtos...</p>
                             </div>
-                        ) : syncedProducts.length > 0 ? syncedProducts.map((p, i) => (
+                        ) : (syncedProducts.length > 0 ? syncedProducts : (company.products || [])).length > 0 ? (syncedProducts.length > 0 ? syncedProducts : (company.products || [])).map((p, i) => (
                             <div
                                 key={i}
                                 className="bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-[8px] overflow-hidden shadow-sm hover:shadow-md transition-all group"

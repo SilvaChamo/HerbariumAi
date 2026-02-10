@@ -468,7 +468,7 @@ export const databaseService = {
             .from('products')
             .select('*')
             .eq('company_id', companyId)
-            .eq('is_archived', false)
+            .or('is_archived.eq.false,is_archived.is.null')
             .order('created_at', { ascending: false });
         if (error) throw error;
         return data as any[];
@@ -479,7 +479,7 @@ export const databaseService = {
         const { data, error } = await supabase
             .from('companies')
             .select('*')
-            .eq('is_archived', false)
+            .or('is_archived.eq.false,is_archived.is.null')
             .ilike('category', `%${category}%`)
             .order('name', { ascending: true });
         if (error) throw error;
@@ -492,21 +492,21 @@ export const databaseService = {
         const { data: companies } = await supabase
             .from('companies')
             .select('*')
-            .eq('is_archived', false)
+            .or('is_archived.eq.false,is_archived.is.null')
             .ilike('name', `%${query}%`)
             .limit(10);
 
         const { data: professionals } = await supabase
             .from('professionals')
             .select('*')
-            .eq('is_archived', false)
+            .or('is_archived.eq.false,is_archived.is.null')
             .or(`name.ilike.%${query}%,role.ilike.%${query}%`)
             .limit(10);
 
         const { data: products } = await supabase
             .from('products')
             .select('*')
-            .eq('is_archived', false)
+            .or('is_archived.eq.false,is_archived.is.null')
             .ilike('name', `%${query}%`)
             .limit(10);
 

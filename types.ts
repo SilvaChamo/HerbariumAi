@@ -97,6 +97,7 @@ export interface CompanyDetail {
   paymentMethod?: 'mpesa' | 'emola' | 'banco' | null;
   paymentPhone?: string;
   productLimit?: number | null; // new field indicating max products for the plan
+  user_id?: string;
 }
 
 export interface Professional {
@@ -114,6 +115,7 @@ export interface Professional {
   profession?: string;
   whatsapp?: string;
   is_archived?: boolean;
+  user_id?: string;
 }
 
 export interface MarketProduct {
@@ -124,6 +126,7 @@ export interface MarketProduct {
   price: number;
   description: string;
   company_id: string;
+  user_id?: string;
   is_archived?: boolean;
 }
 

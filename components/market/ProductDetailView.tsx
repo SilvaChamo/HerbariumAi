@@ -6,10 +6,12 @@ interface ProductDetailViewProps {
     product: MarketProduct;
     onBack: () => void;
     onViewCompany: (company: CompanyDetail) => void;
+    onViewProfessional?: (prof: any) => void;
 }
 
-const ProductDetailView: React.FC<ProductDetailViewProps> = ({ product, onBack, onViewCompany }) => {
+const ProductDetailView: React.FC<ProductDetailViewProps> = ({ product, onBack, onViewCompany, onViewProfessional }) => {
     const [company, setCompany] = useState<CompanyDetail | null>(null);
+    const [professionalOwner, setProfessionalOwner] = useState<any | null>(null);
     const [suggestions, setSuggestions] = useState<any[]>([]);
     const [relatedProfessional, setRelatedProfessional] = useState<any>(null);
     const [loading, setLoading] = useState(true);
@@ -18,7 +20,7 @@ const ProductDetailView: React.FC<ProductDetailViewProps> = ({ product, onBack, 
         // Log view
         databaseService.logPageView('product', product.id).catch(console.error);
 
-        // Fetch company info to show who sells it
+        // Fetch owner info to show who sells it
         const fetchContext = async () => {
             try {
                 const [companies, allProducts, allProfessionals] = await Promise.all([
@@ -27,9 +29,14 @@ const ProductDetailView: React.FC<ProductDetailViewProps> = ({ product, onBack, 
                     databaseService.getProfessionals()
                 ]);
 
-                // Seller
-                const seller = companies.find(c => c.id === product.company_id);
-                if (seller) setCompany(seller);
+                // Seller (Company or Professional)
+                const sellerCompany = companies.find(c => c.id === product.company_id || c.user_id === product.user_id);
+                if (sellerCompany) {
+                    setCompany(sellerCompany);
+                } else {
+                    const sellerProf = allProfessionals.find(p => p.id === product.company_id || p.user_id === product.user_id);
+                    if (sellerProf) setProfessionalOwner(sellerProf);
+                }
 
                 // Suggestions (same category, different product)
                 const similar = allProducts
@@ -38,8 +45,10 @@ const ProductDetailView: React.FC<ProductDetailViewProps> = ({ product, onBack, 
                 setSuggestions(similar);
 
                 // Related Professional (same province or role related to category)
-                const expert = allProfessionals[Math.floor(Math.random() * allProfessionals.length)];
-                setRelatedProfessional(expert);
+                if (allProfessionals.length > 0) {
+                    const expert = allProfessionals[Math.floor(Math.random() * allProfessionals.length)];
+                    setRelatedProfessional(expert);
+                }
 
             } catch (err) {
                 console.error('Erro ao procurar dados relacionados:', err);
@@ -49,12 +58,15 @@ const ProductDetailView: React.FC<ProductDetailViewProps> = ({ product, onBack, 
         };
 
         fetchContext();
-    }, [product.id, product.company_id]);
+    }, [product.id, product.company_id, product.user_id]);
 
     const handleBuyWhatsApp = () => {
-        if (!company) return;
+        const target = company || professionalOwner;
+        if (!target) return;
+        const contact = target.contact || target.phone || target.whatsapp;
+        if (!contact) return;
         const message = `Olá! Vi o produto *${product.name}* (${product.price} MT) na Botánica AI e gostaria de mais informações.`;
-        window.open(`https://wa.me/${company.contact?.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(message)}`, '_blank');
+        window.open(`https://wa.me/${contact.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(message)}`, '_blank');
     };
 
     return (
@@ -99,20 +111,20 @@ const ProductDetailView: React.FC<ProductDetailViewProps> = ({ product, onBack, 
                     </p>
                 </div>
 
-                {company && (
+                {(company || professionalOwner) && (
                     <div className="bg-slate-50 dark:bg-slate-800/50 p-6 rounded-2xl border border-slate-100 dark:border-slate-800 space-y-4">
                         <div className="flex items-center gap-4">
-                            <img src={company.logo} className="w-12 h-12 rounded-[12px] object-contain bg-white p-1" alt={company.name} />
+                            <img src={company?.logo || professionalOwner?.image_url} className="w-12 h-12 rounded-[12px] object-contain bg-white p-1" alt={company?.name || professionalOwner?.name} />
                             <div className="min-w-0">
                                 <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Vendido por</p>
-                                <h4 className="text-sm font-black text-slate-800 dark:text-white truncate">{company.name}</h4>
+                                <h4 className="text-sm font-black text-slate-800 dark:text-white truncate">{company?.name || professionalOwner?.name}</h4>
                             </div>
                         </div>
                         <button
-                            onClick={() => onViewCompany(company)}
+                            onClick={() => company ? onViewCompany(company) : onViewProfessional?.(professionalOwner)}
                             className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 py-3 rounded-[12px] text-[10px] font-black uppercase hover:border-emerald-500 transition-all font-titles"
                         >
-                            Ver Perfil da Empresa
+                            Ver Perfil do Vendedor
                         </button>
                     </div>
                 )}

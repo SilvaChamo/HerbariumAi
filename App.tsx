@@ -179,6 +179,12 @@ const App: React.FC = () => {
   // Efeito isolado para o atalho de registo via evento customizado e instalação PWA
   useEffect(() => {
     const handleOpenForm = () => {
+      setActiveCategory(null);
+      setFilteredResults([]);
+      setViewingCompany(null);
+      setViewingProduct(null);
+      setViewingProfessional(null);
+      setViewingNews(null);
       setActiveTab(AppTab.DISCOVER);
       if (!user) {
         setPendingRegister(true);
@@ -474,7 +480,12 @@ const App: React.FC = () => {
       setActiveTab(tab);
       setShowDashboard(tab === AppTab.ACCOUNT ? false : showDashboard);
       setShowAccountCollections(false);
+      setActiveCategory(null);
+      setFilteredResults([]);
       setViewingCompany(null);
+      setViewingProduct(null);
+      setViewingProfessional(null);
+      setViewingNews(null);
       setShowCompanyForm(false);
       setShowProfessionalForm(false);
     }
@@ -582,6 +593,66 @@ const App: React.FC = () => {
             onClose={() => setShowDashboard(false)}
             onEdit={() => { setShowDashboard(false); setShowCompanyForm(true); }}
           />
+        ) : activeTab === AppTab.AUTH ? (
+          <div className="h-full overflow-y-auto">
+            <AuthForm
+              onAuth={handleAuth}
+              onNavigate={setActiveTab}
+              onAlert={(title, message, type) => setDialog({ isOpen: true, title, message, type })}
+            />
+          </div>
+        ) : activeTab === AppTab.ACCOUNT ? (
+          user ? (
+            <AccountDashboard
+              user={user}
+              company={myCompany}
+              professional={myProfessional}
+              onLogout={handleLogout}
+              collection={collection}
+              onViewPlant={setSelectedPlant}
+              showCollections={showAccountCollections}
+              setShowCollections={setShowAccountCollections}
+              onAdminAction={(action) => {
+                if (action === 'videos') {
+                  setShowVideoManagement(true);
+                } else if (action === 'collections') {
+                  setShowAccountCollections(true);
+                } else {
+                  handleCategoryClick(action as any);
+                }
+              }}
+              onEditCompany={() => {
+                setActiveTab(AppTab.DISCOVER);
+                setShowCompanyForm(true);
+              }}
+              onRegisterCompany={() => {
+                setActiveTab(AppTab.DISCOVER);
+                setShowCompanyForm(true);
+              }}
+              onEditProfessional={() => {
+                setShowProfessionalForm(true);
+              }}
+              onRegisterProfessional={() => {
+                setShowProfessionalForm(true);
+              }}
+            />
+          ) : (
+            <div className="flex-1 flex flex-col items-center justify-center text-center p-8 space-y-6 h-full">
+              <div className="w-24 h-24 bg-slate-50 dark:bg-slate-800 rounded-[2.5rem] flex items-center justify-center shadow-sm">
+                <i className="fa-solid fa-lock text-4xl text-slate-200 dark:text-slate-700"></i>
+              </div>
+              <div>
+                <h2 className="text-2xl font-bold text-[#1e293b] dark:text-slate-100">Área Restrita</h2>
+                <p className="text-xs text-slate-400 dark:text-slate-500 mt-2 px-6">Para aceder à sua conta e gerir os seus dados, por favor faça login.</p>
+              </div>
+              <button
+                onClick={() => setActiveTab(AppTab.AUTH)}
+                className="w-full max-w-[200px] bg-[#10b981] text-white py-3 rounded-lg font-black text-[11px] uppercase tracking-widest shadow-lg shadow-emerald-100 dark:shadow-none active:scale-95 transition-all"
+              >
+                Entrar | Registar
+              </button>
+            </div>
+          )
         ) : activeCategory && filteredResults ? (
           <div className="flex flex-col animate-in fade-in pb-10">
             {/* Category Header */}
@@ -607,6 +678,8 @@ const App: React.FC = () => {
                       onClick={() => {
                         if (user) setShowCompanyForm(true);
                         else {
+                          setActiveCategory(null);
+                          setFilteredResults([]);
                           setPendingRegister(true);
                           setActiveTab(AppTab.AUTH);
                         }
@@ -621,6 +694,8 @@ const App: React.FC = () => {
                       onClick={() => {
                         if (user) setShowProfessionalForm(true);
                         else {
+                          setActiveCategory(null);
+                          setFilteredResults([]);
                           setPendingRegister(true);
                           setActiveTab(AppTab.AUTH);
                         }
@@ -637,6 +712,8 @@ const App: React.FC = () => {
                           if (myCompany) setShowDashboard(true);
                           else setShowCompanyForm(true);
                         } else {
+                          setActiveCategory(null);
+                          setFilteredResults([]);
                           setPendingRegister(true);
                           setActiveTab(AppTab.AUTH);
                         }
@@ -904,6 +981,10 @@ const App: React.FC = () => {
                   setViewingProduct(null);
                   setViewingCompany(comp);
                 }}
+                onViewProfessional={(prof) => {
+                  setViewingProduct(null);
+                  setViewingProfessional(prof);
+                }}
                 onEdit={user?.isAdmin ? () => {
                   // Implement product direct edit if needed, for now use current flow
                   setViewingProduct(null);
@@ -1000,6 +1081,8 @@ const App: React.FC = () => {
                 <div
                   onClick={() => {
                     if (!user) {
+                      setActiveCategory(null);
+                      setFilteredResults([]);
                       setPendingRegister(true);
                       setActiveTab(AppTab.AUTH);
                     } else {
@@ -1136,66 +1219,6 @@ const App: React.FC = () => {
               </div>
             </div>
           </div>
-        ) : activeTab === AppTab.AUTH ? (
-          <div className="h-full overflow-y-auto">
-            <AuthForm
-              onAuth={handleAuth}
-              onNavigate={setActiveTab}
-              onAlert={(title, message, type) => setDialog({ isOpen: true, title, message, type })}
-            />
-          </div>
-        ) : activeTab === AppTab.ACCOUNT ? (
-          user ? (
-            <AccountDashboard
-              user={user}
-              company={myCompany}
-              professional={myProfessional}
-              onLogout={handleLogout}
-              collection={collection}
-              onViewPlant={setSelectedPlant}
-              showCollections={showAccountCollections}
-              setShowCollections={setShowAccountCollections}
-              onAdminAction={(action) => {
-                if (action === 'videos') {
-                  setShowVideoManagement(true);
-                } else if (action === 'collections') {
-                  setShowAccountCollections(true);
-                } else {
-                  handleCategoryClick(action as any);
-                }
-              }}
-              onEditCompany={() => {
-                setActiveTab(AppTab.DISCOVER);
-                setShowCompanyForm(true);
-              }}
-              onRegisterCompany={() => {
-                setActiveTab(AppTab.DISCOVER);
-                setShowCompanyForm(true);
-              }}
-              onEditProfessional={() => {
-                setShowProfessionalForm(true);
-              }}
-              onRegisterProfessional={() => {
-                setShowProfessionalForm(true);
-              }}
-            />
-          ) : (
-            <div className="flex-1 flex flex-col items-center justify-center text-center p-8 space-y-6 h-full">
-              <div className="w-24 h-24 bg-slate-50 dark:bg-slate-800 rounded-[2.5rem] flex items-center justify-center shadow-sm">
-                <i className="fa-solid fa-lock text-4xl text-slate-200 dark:text-slate-700"></i>
-              </div>
-              <div>
-                <h2 className="text-2xl font-bold text-[#1e293b] dark:text-slate-100">Área Restrita</h2>
-                <p className="text-xs text-slate-400 dark:text-slate-500 mt-2 px-6">Para aceder à sua conta e gerir os seus dados, por favor faça login.</p>
-              </div>
-              <button
-                onClick={() => setActiveTab(AppTab.AUTH)}
-                className="w-full max-w-[200px] bg-[#10b981] text-white py-3 rounded-lg font-black text-[11px] uppercase tracking-widest shadow-lg shadow-emerald-100 dark:shadow-none active:scale-95 transition-all"
-              >
-                Entrar | Registar
-              </button>
-            </div>
-          )
         ) : null}
       </main >
 
