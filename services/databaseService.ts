@@ -45,7 +45,7 @@ export const databaseService = {
         const { data, error } = await supabase
             .from('companies')
             .select('*')
-            .eq('is_archived', false)
+            .or('is_archived.eq.false,is_archived.is.null')
             .order('is_featured', { ascending: false })
             .order('created_at', { ascending: false });
 
@@ -58,7 +58,7 @@ export const databaseService = {
             .from('companies')
             .select('*')
             .eq('user_id', userId)
-            .eq('is_archived', false)
+            .or('is_archived.eq.false,is_archived.is.null')
             .maybeSingle();
 
         if (error) throw error;
@@ -381,7 +381,6 @@ export const databaseService = {
         const { data, error } = await supabase
             .from('professionals')
             .select('*')
-            .or('is_archived.eq.false,is_archived.is.null')
             .order('rating', { ascending: false });
 
         if (error) throw error;
@@ -397,9 +396,12 @@ export const databaseService = {
     },
 
     async archiveProfessional(id: string, isArchived: boolean = true): Promise<void> {
+        // Table doesn't have is_archived, using status as proxy if needed, 
+        // but for now we'll just log since we can't update a missing column
+        console.warn('Professional table doesn\'t have is_archived column');
         const { error } = await supabase
             .from('professionals')
-            .update({ is_archived: isArchived })
+            .update({ status: isArchived ? 'archived' : 'active' })
             .eq('id', id);
         if (error) throw error;
     },
@@ -421,7 +423,7 @@ export const databaseService = {
         const { data, error } = await supabase
             .from('products')
             .select('*')
-            .or('is_archived.eq.false,is_archived.is.null')
+            .is('deleted_at', null)
             .order('created_at', { ascending: false });
         if (error) throw error;
         return data as any[];
@@ -437,7 +439,7 @@ export const databaseService = {
                 image_url: product.photo || product.image_url,
                 company_id: product.company_id,
                 user_id: product.user_id,
-                is_archived: false,
+                is_available: true,
                 updated_at: new Date().toISOString()
             })
             .select()
@@ -456,9 +458,10 @@ export const databaseService = {
     },
 
     async archiveProduct(id: string, isArchived: boolean = true): Promise<void> {
+        // Table doesn't have is_archived, using deleted_at as a soft delete proxy
         const { error } = await supabase
             .from('products')
-            .update({ is_archived: isArchived })
+            .update({ deleted_at: isArchived ? new Date().toISOString() : null })
             .eq('id', id);
         if (error) throw error;
     },
@@ -468,7 +471,7 @@ export const databaseService = {
             .from('products')
             .select('*')
             .eq('company_id', companyId)
-            .or('is_archived.eq.false,is_archived.is.null')
+            .is('deleted_at', null)
             .order('created_at', { ascending: false });
         if (error) throw error;
         return data as any[];
@@ -499,14 +502,13 @@ export const databaseService = {
         const { data: professionals } = await supabase
             .from('professionals')
             .select('*')
-            .or('is_archived.eq.false,is_archived.is.null')
             .or(`name.ilike.%${query}%,role.ilike.%${query}%`)
             .limit(10);
 
         const { data: products } = await supabase
             .from('products')
             .select('*')
-            .or('is_archived.eq.false,is_archived.is.null')
+            .is('deleted_at', null)
             .ilike('name', `%${query}%`)
             .limit(10);
 
@@ -519,9 +521,9 @@ export const databaseService = {
 
     async getAppStats() {
         const [companies, products, professionals] = await Promise.all([
-            supabase.from('companies').select('*', { count: 'exact', head: true }).eq('is_archived', false),
-            supabase.from('products').select('*', { count: 'exact', head: true }).eq('is_archived', false),
-            supabase.from('professionals').select('*', { count: 'exact', head: true }).eq('is_archived', false)
+            supabase.from('companies').select('*', { count: 'exact', head: true }).or('is_archived.eq.false,is_archived.is.null'),
+            supabase.from('products').select('*', { count: 'exact', head: true }).is('deleted_at', null),
+            supabase.from('professionals').select('*', { count: 'exact', head: true }).or('status.eq.active,status.is.null')
         ]);
 
         return {

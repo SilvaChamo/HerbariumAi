@@ -21,6 +21,7 @@ import ProductDetailView from './components/market/ProductDetailView';
 import ProfessionalDetailView from './components/market/ProfessionalDetailView';
 import { SkeletonCard, SkeletonHeader } from './components/ui/SkeletonLoader';
 import NewsDetailView from './components/market/NewsDetailView';
+import VideoGallery from './components/market/VideoGallery';
 import SearchEngine from './components/ui/SearchEngine';
 import { CompanyDetail, PlantInfo, User, Professional, MarketProduct, AppTab } from './types';
 import { supabase } from './supabaseClient';
@@ -62,6 +63,7 @@ const App: React.FC = () => {
   const [viewingProduct, setViewingProduct] = useState<MarketProduct | null>(null);
   const [viewingProfessional, setViewingProfessional] = useState<Professional | null>(null);
   const [viewingNews, setViewingNews] = useState<any | null>(null);
+  const [showVideoGallery, setShowVideoGallery] = useState(false);
 
   // Controle de Dashboard
   const [showDashboard, setShowDashboard] = useState(false);
@@ -786,6 +788,69 @@ const App: React.FC = () => {
               </div>
             )}
 
+            {!loading && activeCategory === 'Profissionais' && featuredProfessionals.length > 0 && (
+              <div className="px-6 space-y-4 py-8 bg-emerald-50/50 dark:bg-emerald-900/10 border-b border-emerald-100 dark:border-emerald-800 animate-in fade-in slide-in-from-top duration-500">
+                <div className="flex items-center justify-between px-2">
+                  <div className="space-y-1">
+                    <h3 className="text-xs font-black uppercase text-emerald-600 dark:text-emerald-500 tracking-[0.2em] leading-none">Profissionais Especialistas</h3>
+                    <p className="text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">Consultoria & Apoio Técnico</p>
+                  </div>
+                  <div className="flex gap-2">
+                    <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></div>
+                    <div className="w-1.5 h-1.5 rounded-full bg-emerald-300"></div>
+                  </div>
+                </div>
+
+                <div className="flex gap-4 overflow-x-auto pb-4 px-2 scrollbar-none snap-x snap-mandatory">
+                  {featuredProfessionals.map((prof) => (
+                    <div
+                      key={prof.id}
+                      onClick={() => setViewingProfessional(prof)}
+                      className="w-[280px] shrink-0 bg-white dark:bg-[#1a2333] p-5 rounded-[24px] border border-emerald-100 dark:border-emerald-800/50 flex flex-col space-y-4 hover:border-orange-400 transition-all cursor-pointer shadow-sm group snap-start relative overflow-hidden"
+                    >
+                      <div className="absolute top-0 right-0 p-3">
+                        <i className="fa-solid fa-certificate text-emerald-500 text-lg opacity-20 group-hover:opacity-100 group-hover:scale-110 transition-all"></i>
+                      </div>
+
+                      <div className="flex items-center gap-4">
+                        <div className="w-16 h-16 rounded-2xl bg-emerald-50 dark:bg-emerald-900/30 overflow-hidden shrink-0 border border-emerald-100 dark:border-emerald-800 flex items-center justify-center p-1">
+                          {prof.image_url ? (
+                            <img src={prof.image_url} className="w-full h-full object-cover rounded-xl group-hover:scale-110 transition-transform duration-500" alt={prof.name} />
+                          ) : (
+                            <i className="fa-solid fa-user-tie text-2xl text-emerald-200 dark:text-emerald-700"></i>
+                          )}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <h4 className="text-[13px] font-black text-slate-800 dark:text-white truncate uppercase tracking-tight">{prof.name}</h4>
+                          <div className="flex items-center gap-1 mt-0.5">
+                            <span className="px-2 py-0.5 bg-emerald-500 text-[8px] font-black text-white rounded-full uppercase tracking-widest">Verificado</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="pt-2 border-t border-slate-50 dark:border-slate-800/50">
+                        <p className="text-[10px] text-emerald-600 dark:text-emerald-500 font-bold uppercase tracking-tight leading-none mb-1">{prof.role || prof.profession}</p>
+                        <p className="text-[9px] text-slate-400 dark:text-slate-500 font-medium line-clamp-2 leading-relaxed">
+                          Especialista em consultoria agrária e apoio técnico personalizado para produtores.
+                        </p>
+                      </div>
+
+                      <div className="flex items-center justify-between pt-2">
+                        <div className="flex -space-x-2">
+                          {[1, 2, 3].map(i => (
+                            <div key={i} className="w-5 h-5 rounded-full border-2 border-white dark:border-slate-900 bg-slate-100 dark:bg-slate-800 flex items-center justify-center">
+                              <i className="fa-solid fa-star text-[6px] text-yellow-500"></i>
+                            </div>
+                          ))}
+                        </div>
+                        <span className="text-[9px] font-black text-slate-300 dark:text-slate-600 uppercase">Ver Perfil <i className="fa-solid fa-arrow-right ml-1"></i></span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {/* Tabs for News & Alertas */}
             {!loading && (activeCategory === 'Dicas & Notícias' || activeCategory === 'Notícias') && (
               <div className="px-6 py-2 bg-white dark:bg-slate-900 border-b border-slate-100 dark:border-slate-800 flex gap-4">
@@ -1001,6 +1066,10 @@ const App: React.FC = () => {
                 news={viewingNews}
                 onBack={() => setViewingNews(null)}
               />
+            ) : showVideoGallery ? (
+              <VideoGallery
+                onClose={() => setShowVideoGallery(false)}
+              />
             ) : (
               <div className="flex flex-col animate-in fade-in pb-10">
                 {/* Hero Slider (Architecture Mirror of Market) */}
@@ -1103,19 +1172,18 @@ const App: React.FC = () => {
                 </div>
 
 
-                {/* Discover Categories Section */}
                 <div className="px-6 space-y-3 mt-8">
-                  <div className="grid grid-cols-2 gap-3">
-                    {['Empresas', 'Produtos', 'Profissionais', 'Dicas & Notícias', ...(user?.isAdmin ? ['Vídeos'] : [])].map(cat => (
+                  <div className="grid grid-cols-2 gap-3 pb-20">
+                    {['Empresas', 'Produtos', 'Profissionais', 'Dicas & Notícias', 'Vídeos'].map(cat => (
                       <button
                         key={cat}
                         onClick={() => {
-                          if (cat === 'Vídeos') setShowVideoManagement(true);
+                          if (cat === 'Vídeos') setShowVideoGallery(true);
                           else handleCategoryClick(cat);
                         }}
-                        className="bg-white dark:bg-[#1a1f2c] border border-slate-200 dark:border-slate-700 p-4 rounded-2xl flex flex-col items-center gap-3 hover:border-orange-400 transition-all hover:shadow-lg hover:shadow-slate-100 dark:hover:shadow-none group active:scale-95"
+                        className={`bg-white dark:bg-[#1a1f2c] border border-slate-200 dark:border-slate-700 p-4 rounded-2xl flex flex-col items-center gap-3 hover:border-orange-400 transition-all hover:shadow-lg hover:shadow-slate-100 dark:hover:shadow-none group active:scale-95 ${cat === 'Vídeos' ? 'col-span-2' : ''}`}
                       >
-                        <div className="w-12 h-12 bg-emerald-50 dark:bg-emerald-900/20 text-[#10b981] dark:text-emerald-500 group-hover:bg-orange-500 group-hover:text-white rounded-2xl flex items-center justify-center text-xl transition-all shadow-sm">
+                        <div className={`w-12 h-12 bg-emerald-50 dark:bg-emerald-900/20 text-[#10b981] dark:text-emerald-500 group-hover:bg-orange-500 group-hover:text-white rounded-2xl flex items-center justify-center text-xl transition-all shadow-sm ${cat === 'Vídeos' ? 'bg-orange-50 text-orange-500 group-hover:bg-emerald-500' : ''}`}>
                           <i className={`fa-solid ${cat === 'Empresas' ? 'fa-building' : cat === 'Produtos' ? 'fa-box' : cat === 'Profissionais' ? 'fa-user' : cat === 'Vídeos' ? 'fa-film' : 'fa-newspaper'}`}></i>
                         </div>
                         <span className="font-bold text-slate-700 dark:text-slate-100 text-[11px] uppercase tracking-tight">{cat}</span>
@@ -1124,40 +1192,7 @@ const App: React.FC = () => {
                   </div>
                 </div>
 
-                {/* Showcase Professionals Section */}
-                {featuredProfessionals.length > 0 && (
-                  <div className="mt-8 space-y-4">
-                    <div className="px-6 flex items-center justify-between">
-                      <h3 className="text-xs font-black uppercase text-slate-400 dark:text-slate-500 tracking-widest leading-none">Profissionais Especialistas</h3>
-                      <button onClick={() => handleCategoryClick('Profissionais')} className="text-[10px] font-black text-emerald-600 dark:text-emerald-500 uppercase tracking-tighter">Ver Todos</button>
-                    </div>
-                    <div className="flex gap-4 overflow-x-auto pb-6 px-6 scrollbar-none">
-                      {featuredProfessionals.map((prof) => (
-                        <div
-                          key={prof.id}
-                          onClick={() => setViewingProfessional(prof)}
-                          className="w-48 shrink-0 bg-white dark:bg-[#1a1f2c] p-4 rounded-3xl border border-slate-100 dark:border-slate-800 flex flex-col items-center text-center space-y-3 hover:border-orange-400 transition-all cursor-pointer shadow-sm group"
-                        >
-                          <div className="w-16 h-16 rounded-2xl bg-slate-50 dark:bg-slate-800 overflow-hidden shrink-0 border border-slate-100 dark:border-slate-700 flex items-center justify-center">
-                            {prof.image_url ? (
-                              <img src={prof.image_url} className="w-full h-full object-cover group-hover:scale-110 transition-transform" alt={prof.name} />
-                            ) : (
-                              <i className="fa-solid fa-user text-2xl text-slate-200 dark:text-slate-700"></i>
-                            )}
-                          </div>
-                          <div className="space-y-1 w-full overflow-hidden">
-                            <h4 className="text-[11px] font-black text-slate-800 dark:text-white truncate uppercase tracking-tight">{prof.name}</h4>
-                            <p className="text-[9px] text-emerald-600 dark:text-emerald-500 font-bold uppercase truncate">{prof.role || prof.profession}</p>
-                          </div>
-                          <div className="flex items-center gap-2 pt-1">
-                            <i className="fa-solid fa-star text-[9px] text-yellow-500"></i>
-                            <span className="text-[9px] text-slate-400 font-black">{prof.rating || '5.0'}</span>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
+                {/* Specialists removed from main view */}
               </div>
             )}
           </div>

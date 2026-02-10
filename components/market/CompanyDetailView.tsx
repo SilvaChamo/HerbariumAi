@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { CompanyDetail } from '../../types';
 import { databaseService } from '../../services/databaseService';
+import { QRCodeCanvas } from 'qrcode.react';
 
 interface CompanyDetailViewProps {
     company: CompanyDetail;
@@ -13,6 +14,7 @@ const CompanyDetailView: React.FC<CompanyDetailViewProps> = ({ company, onBack }
     const [submitted, setSubmitted] = useState(false);
     const [syncedProducts, setSyncedProducts] = useState<any[]>([]);
     const [loadingProducts, setLoadingProducts] = useState(false);
+    const [showQRCode, setShowQRCode] = useState(false);
 
     useEffect(() => {
         if (company.id) {
@@ -48,6 +50,8 @@ const CompanyDetailView: React.FC<CompanyDetailViewProps> = ({ company, onBack }
             setSubmitting(false);
         }
     };
+
+    const publicUrl = `https://agrodata.co.mz/directory/${company.slug}`;
 
     return (
         <div className="animate-in slide-in-from-bottom pb-20 bg-white dark:bg-[#0f172a]">
@@ -253,6 +257,13 @@ const CompanyDetailView: React.FC<CompanyDetailViewProps> = ({ company, onBack }
                                             <i className="fa-brands fa-facebook text-sm"></i>
                                             Partilhar
                                         </button>
+                                        <button
+                                            onClick={() => setShowQRCode(true)}
+                                            className="col-span-2 py-3 bg-slate-900 hover:bg-slate-800 text-white rounded-[8px] text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2 shadow-sm transition-all active:scale-95"
+                                        >
+                                            <i className="fa-solid fa-qrcode text-sm"></i>
+                                            QR Code para Partilha
+                                        </button>
                                     </div>
                                 </div>
                             </div>
@@ -265,6 +276,52 @@ const CompanyDetailView: React.FC<CompanyDetailViewProps> = ({ company, onBack }
                     </div>
                 </div>
             </div>
+
+            {/* QR Code Modal */}
+            {showQRCode && (
+                <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] flex items-center justify-center p-6 animate-in fade-in">
+                    <div className="bg-white dark:bg-slate-900 w-full max-w-sm rounded-[12px] overflow-hidden shadow-2xl animate-in zoom-in-95 duration-300">
+                        <div className="p-8 text-center space-y-6">
+                            <div className="space-y-2">
+                                <h3 className="text-xl font-black text-slate-900 dark:text-slate-100 uppercase tracking-tight">QR Code da Empresa</h3>
+                                <p className="text-xs text-slate-400 dark:text-slate-500 font-medium">Capture clientes do mundo físico para o seu perfil digital</p>
+                            </div>
+
+                            <div className="bg-slate-50 dark:bg-white p-6 rounded-[12px] inline-block border-4 border-white dark:border-slate-800 shadow-inner">
+                                <QRCodeCanvas
+                                    value={publicUrl}
+                                    size={200}
+                                    level="H"
+                                    includeMargin={false}
+                                    imageSettings={{
+                                        src: company.logo || '',
+                                        x: undefined,
+                                        y: undefined,
+                                        height: 40,
+                                        width: 40,
+                                        excavate: true,
+                                    }}
+                                />
+                            </div>
+
+                            <div className="space-y-4">
+                                <div className="bg-emerald-50 dark:bg-emerald-900/20 p-4 rounded-[8px] border border-emerald-100 dark:border-emerald-800">
+                                    <p className="text-[10px] font-bold text-emerald-700 dark:text-emerald-500 leading-relaxed">
+                                        Este código redireciona diretamente para o perfil oficial da {company.name}.
+                                    </p>
+                                </div>
+
+                                <button
+                                    onClick={() => setShowQRCode(false)}
+                                    className="w-full py-4 bg-slate-900 dark:bg-emerald-600 text-white rounded-[12px] font-black text-xs uppercase tracking-widest hover:bg-orange-500 dark:hover:bg-emerald-500 transition-colors"
+                                >
+                                    Fechar Janela
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };
