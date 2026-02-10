@@ -23,7 +23,7 @@ import { CompanyDetail, PlantInfo, User, Professional, MarketProduct, AppTab } f
 import { supabase } from './supabaseClient';
 import { databaseService } from './services/databaseService';
 
-const ADMIN_EMAILS = ['admin@botanica.co.mz', 'silva@agrodata.co.mz', 'chamo@agrodata.co.mz'];
+const ADMIN_EMAILS = ['silva.chamo@gmail.com', 'admin@botanica.co.mz', 'silva@agrodata.co.mz', 'chamo@agrodata.co.mz'];
 
 const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState<AppTab>(AppTab.SCAN);
@@ -233,7 +233,7 @@ const App: React.FC = () => {
   };
 
   const handleAuth = (newUser: User) => {
-    const userWithAdmin = { ...newUser, isAdmin: ADMIN_EMAILS.includes(newUser.email) };
+    const userWithAdmin = { ...newUser, isAdmin: ADMIN_EMAILS.some(e => e.toLowerCase() === (newUser.email || '').toLowerCase()) };
     setUser(userWithAdmin);
     if (pendingRegister) {
       setActiveTab(AppTab.DISCOVER);
