@@ -164,18 +164,17 @@ export const databaseService = {
 
     // Video Ads
     async getVideoAds(): Promise<VideoAd[]> {
-        console.log('Fetching filtered video ads...');
+        console.log('Fetching video ads...');
         const { data, error } = await supabase
             .from('video_ads')
             .select('*')
-            .eq('is_archived', false)
             .order('created_at', { ascending: false });
 
         if (error) {
             console.error('Supabase error fetching videos:', error);
             throw error;
         }
-        console.log('Filtered videos fetched:', data?.length);
+        console.log('Videos fetched:', data?.length);
         return (data || []).map(d => ({
             id: d.id,
             companyName: d.company_name,
@@ -183,7 +182,7 @@ export const databaseService = {
             address: d.address,
             videoLink: d.video_link,
             embedUrl: d.embed_url,
-            is_archived: d.is_archived,
+            is_archived: false,
             createdAt: d.created_at
         }));
     },
@@ -206,7 +205,7 @@ export const databaseService = {
             address: d.address,
             videoLink: d.video_link,
             embedUrl: d.embed_url,
-            is_archived: d.is_archived,
+            is_archived: false,
             createdAt: d.created_at
         }));
     },
@@ -237,7 +236,7 @@ export const databaseService = {
             address: data.address,
             videoLink: data.video_link,
             embedUrl: data.embed_url,
-            is_archived: data.is_archived,
+            is_archived: false,
             createdAt: data.created_at
         };
     },
@@ -256,16 +255,9 @@ export const databaseService = {
     },
 
     async archiveVideoAd(id: string, isArchived: boolean = true): Promise<void> {
-        console.log('Archiving video ad:', id, isArchived);
-        const { error } = await supabase
-            .from('video_ads')
-            .update({ is_archived: isArchived })
-            .eq('id', id);
-        if (error) {
-            console.error('Supabase error archiving video:', error);
-            throw error;
-        }
-        console.log('Video archive status updated successfully');
+        console.log('Archive requested for video but column missing in DB:', id);
+        // Temporarily no-op or throw clearer error
+        throw new Error("A tabela 'video_ads' não tem a coluna de arquivo. Por favor, adicione-a no Supabase.");
     },
 
     // Collection

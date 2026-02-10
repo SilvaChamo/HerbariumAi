@@ -160,6 +160,8 @@ const VideoManagement: React.FC<VideoManagementProps> = ({ onClose, onAddVideo }
                                             <i className="fa-solid fa-play text-xs"></i>
                                         </button>
 
+                                        {/* Arquivar desativado para vídeos por falta de coluna no DB */}
+                                        {/* 
                                         <button
                                             onClick={() => handleArchive(video.id, (video as any).is_archived)}
                                             className={`w-9 h-9 rounded-xl flex items-center justify-center transition-all ${(video as any).is_archived ? 'bg-emerald-50 text-emerald-600 hover:bg-emerald-600 hover:text-white' : 'bg-slate-50 text-slate-400 hover:bg-slate-500 hover:text-white'}`}
@@ -167,6 +169,7 @@ const VideoManagement: React.FC<VideoManagementProps> = ({ onClose, onAddVideo }
                                         >
                                             <i className={`fa-solid ${(video as any).is_archived ? 'fa-rotate-left' : 'fa-box-archive'} text-xs`}></i>
                                         </button>
+                                        */}
 
                                         <button
                                             onClick={() => handleDelete(video.id)}

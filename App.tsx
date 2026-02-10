@@ -26,7 +26,11 @@ import { CompanyDetail, PlantInfo, User, Professional, MarketProduct, AppTab } f
 import { supabase } from './supabaseClient';
 import { databaseService } from './services/databaseService';
 
-const ADMIN_EMAILS = ['silva.chamo@gmail.com', 'silvachamo@gmail.com', 'admin@botanica.co.mz', 'silva@agrodata.co.mz', 'chamo@agrodata.co.mz'];
+const ADMIN_EMAILS = [
+  'silva.chamo@gmail.com', 'silvachamo@gmail.com',
+  'silva.chamo@agrodata.co.mz', 'admin@botanica.co.mz',
+  'silva@agrodata.co.mz', 'chamo@agrodata.co.mz'
+];
 
 const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState<AppTab>(AppTab.SCAN);
@@ -42,7 +46,12 @@ const App: React.FC = () => {
   const [filteredResults, setFilteredResults] = useState<any[]>([]);
 
   // Playlist de Vídeos Publicitários (30 Segundos em Loop)
-  const [adVideos, setAdVideos] = useState<string[]>([]);
+  const DEFAULT_VIDEOS = [
+    'https://www.youtube.com/embed/hcrHxPRDAvc',
+    'https://www.youtube.com/embed/pJwhw100QTc',
+    'https://www.youtube.com/embed/D-jU2-Dk_hU'
+  ];
+  const [adVideos, setAdVideos] = useState<string[]>(DEFAULT_VIDEOS);
   const [currentVideoIndex, setCurrentVideoIndex] = useState(0);
 
   const [showCompanyForm, setShowCompanyForm] = useState(false);
@@ -90,16 +99,9 @@ const App: React.FC = () => {
     databaseService.getVideoAds()
       .then(ads => {
         if (ads.length > 0) {
-          const dbEmbeds = ads.map(ad => ad.embedUrl);
-          setAdVideos(dbEmbeds);
-        } else {
-          // Playlist padrão se estiver vazio (Livestock/Pecuária)
-          setAdVideos([
-            'https://www.youtube.com/embed/hcrHxPRDAvc',
-            'https://www.youtube.com/embed/pJwhw100QTc',
-            'https://www.youtube.com/embed/D-jU2-Dk_hU'
-          ]);
+          setAdVideos(ads.map(ad => ad.embedUrl));
         }
+        // If ads.length === 0, it stays with DEFAULT_VIDEOS
       })
       .catch(console.error);
 
@@ -1052,8 +1054,10 @@ const App: React.FC = () => {
               }).then(() => {
                 // Adicionar à playlist local APÓS o pagamento e persistência
                 setAdVideos(prev => {
-                  const next = [...prev, embedUrl];
-                  setCurrentVideoIndex(next.length - 1); // Jumps exactly to the new one
+                  // Se só temos os defaults, limpamos e colocamos o real
+                  const hasOnlyDefaults = prev.length === 3 && prev.every(v => DEFAULT_VIDEOS.includes(v));
+                  const next = hasOnlyDefaults ? [embedUrl] : [embedUrl, ...prev]; // Novo primeiro
+                  setCurrentVideoIndex(0); // Força tocar o novo
                   return next;
                 });
 
@@ -1063,6 +1067,9 @@ const App: React.FC = () => {
                   message: `O vídeo da "${data.companyName}" foi pago e adicionado à playlist com sucesso!`,
                   type: 'success'
                 });
+
+                // Confirmação extra via alert browser para garantir que o utilizador vê o estado
+                alert('Vídeo adicionado com sucesso à base de dados!');
               }).catch(err => {
                 console.error("Erro CRÍTICO ao salvar vídeo:", err);
                 alert("Erro ao salvar vídeo: " + (err.message || 'Erro desconhecido na base de dados'));
@@ -1087,13 +1094,10 @@ const App: React.FC = () => {
             databaseService.getVideoAds().then(ads => {
               if (ads.length > 0) {
                 setAdVideos(ads.map(ad => ad.embedUrl));
+                setCurrentVideoIndex(0);
               } else {
-                // Reset to defaults if everything was deleted/archived
-                setAdVideos([
-                  'https://www.youtube.com/embed/hcrHxPRDAvc',
-                  'https://www.youtube.com/embed/pJwhw100QTc',
-                  'https://www.youtube.com/embed/D-jU2-Dk_hU'
-                ]);
+                setAdVideos(DEFAULT_VIDEOS);
+                setCurrentVideoIndex(0);
               }
             });
           }}

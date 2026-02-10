@@ -37,22 +37,17 @@ const VideoAdForm: React.FC<VideoAdFormProps> = ({ onSubmit, onClose }) => {
 
     if (step === 'payment') {
         return (
-            <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-                <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-md" onClick={onClose} />
-                <div className="relative w-full max-w-md bg-white dark:bg-slate-900 rounded-[12px] shadow-2xl overflow-hidden animate-in zoom-in duration-300">
-                    <InvoiceReceipt
-                        companyName={formData.companyName}
-                        plan="Publicidade em Vídeo"
-                        amount={2000}
-                        billingPeriod="Spot Único"
-                        onClose={onClose}
-                        onConfirm={() => {
-                            onSubmit(formData);
-                            onClose();
-                        }}
-                    />
-                </div>
-            </div>
+            <InvoiceReceipt
+                companyName={formData.companyName}
+                plan="Publicidade em Vídeo"
+                amount={2000}
+                billingPeriod="Spot Único"
+                onClose={onClose}
+                onConfirm={() => {
+                    onSubmit(formData);
+                    onClose();
+                }}
+            />
         );
     }
 
